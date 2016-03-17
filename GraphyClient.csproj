@@ -54,6 +54,7 @@
     <Compile Include="Database\Email.cs" />
     <Compile Include="Database\SpecialDate.cs" />
     <Compile Include="Database\InstantMessage.cs" />
+    <Compile Include="Database\DatabaseManager.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
