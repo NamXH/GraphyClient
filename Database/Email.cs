@@ -3,7 +3,7 @@ using SQLite;
 
 namespace GraphyClient
 {
-    public class Email
+    public class Email : IIdContainer, IContactIdRelated
     {
         [PrimaryKey]
         public Guid Id { get; set; }
@@ -17,10 +17,6 @@ namespace GraphyClient
         public DateTime LastModified { get; set; }
 
         public bool IsDeleted { get; set; }
-
-        public Email()
-        {
-        }
     }
 }
 

@@ -3,7 +3,7 @@ using SQLite;
 
 namespace GraphyClient
 {
-    public class ContactTagMap
+    public class ContactTagMap : IIdContainer, IContactIdRelated
     {
         [PrimaryKey]
         public Guid Id { get; set; }
@@ -17,10 +17,6 @@ namespace GraphyClient
         public DateTime LastModified { get; set; }
 
         public bool IsDeleted { get; set; }
-
-        public ContactTagMap()
-        {
-        }
     }
 }
 

@@ -55,6 +55,9 @@
     <Compile Include="Database\SpecialDate.cs" />
     <Compile Include="Database\InstantMessage.cs" />
     <Compile Include="Database\DatabaseManager.cs" />
+    <Compile Include="Database\IContactIdRelated.cs" />
+    <Compile Include="Database\IIdContainer.cs" />
+    <Compile Include="Database\INameContainer.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

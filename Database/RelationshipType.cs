@@ -3,7 +3,7 @@ using SQLite;
 
 namespace GraphyClient
 {
-    public class RelationshipType
+    public class RelationshipType : IIdContainer, INameContainer
     {
         [PrimaryKey]
         public Guid Id { get; set; }
@@ -13,10 +13,6 @@ namespace GraphyClient
         public DateTime LastModified { get; set; }
 
         public bool IsDeleted { get; set; }
-
-        public RelationshipType()
-        {
-        }
     }
 }
 
