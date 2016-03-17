@@ -44,6 +44,16 @@
     <Compile Include="SQLiteAsync.cs" />
     <Compile Include="ServerConstants.cs" />
     <Compile Include="Client.cs" />
+    <Compile Include="Database\Tag.cs" />
+    <Compile Include="Database\RelationshipType.cs" />
+    <Compile Include="Database\ContactTagMap.cs" />
+    <Compile Include="Database\Relationship.cs" />
+    <Compile Include="Database\PhoneNumber.cs" />
+    <Compile Include="Database\Address.cs" />
+    <Compile Include="Database\Url.cs" />
+    <Compile Include="Database\Email.cs" />
+    <Compile Include="Database\SpecialDate.cs" />
+    <Compile Include="Database\InstantMessage.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
