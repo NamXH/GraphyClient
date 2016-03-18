@@ -7,10 +7,13 @@ namespace GraphyClient
     {
         public static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            Console.WriteLine("Hello");
+//            var client = new Client();
+//            Task.WaitAll(client.PostTest());
 
-            var client = new Client();
-            Task.WaitAll(client.PostTest());
+            var db1 = new DatabaseManager("1");
+            var db2 = new DatabaseManager("2"); 
+            var db3 = new DatabaseManager("3"); 
         }
     }
 }
