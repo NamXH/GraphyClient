@@ -45,14 +45,25 @@ namespace GraphyClient
             }
         }
 
-        public DatabaseManager(string dbName)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="GraphyClient.DatabaseManager"/> class.
+        /// </summary>
+        /// <param name="dbName">Db name.</param>
+        /// <param name="amount">Amount must be an even number</param>
+        public DatabaseManager(string dbName, int amount)
         {
+            if (amount % 2 != 0)
+            {
+                return;
+            }
+
             _dbName = dbName;
 
             if (!this.Exists())
             {
                 DbConnection = new SQLiteConnection(DbPath);
                 SetupSchema();
+                CreateMassiveDataAndSyncQueue(dbName, amount);
             }
             else
             {
@@ -304,292 +315,216 @@ namespace GraphyClient
 
         #endregion
 
-        #region Create dummy data
-
-        /// <summary>
-        /// Creates the dummy data for test.
-        /// </summary>
-        public void CreateDummyData()
-        {
-            Console.WriteLine("start adding data");
-
-            DbConnection.Insert(new Tag
-                {
-                    Id = Guid.NewGuid(),
-                    Name = "Colleague",
-                });
-            DbConnection.Insert(new Tag
-                { 
-                    Id = Guid.NewGuid(),
-                    Name = "Important",
-                });
-            DbConnection.Insert(new Tag
-                { 
-                    Id = Guid.NewGuid(),
-                    Name = "Created Date",
-                });
-            DbConnection.Insert(new Tag
-                { 
-                    Id = Guid.NewGuid(),
-                    Name = "Created Location",
-                });
-
-            DbConnection.Insert(new RelationshipType
-                {
-                    Id = Guid.NewGuid(),
-                    Name = "Advisor",
-                });
-            DbConnection.Insert(new RelationshipType
-                {
-                    Id = Guid.NewGuid(),
-                    Name = "Daughter",
-                });
-
-            // Contacts
-            var contact1 = new Contact();
-            contact1.Id = Guid.NewGuid();
-            contact1.FirstName = "Andy";
-            contact1.LastName = "Rubin";
-            contact1.ImageName = "andy.jpg";
-            //            contact1.IsActive = true;
-            DbConnection.Insert(contact1);
-
-            var contact2 = new Contact();
-            contact2.Id = Guid.NewGuid();
-            contact2.FirstName = "Bill";
-            contact2.MiddleName = "Henry";
-            contact2.LastName = "Gates";
-            contact2.Organization = "Microsoft";
-            contact2.ImageName = "bill.jpg";
-            //            contact2.IsActive = true;
-            DbConnection.Insert(contact2);
-
-            var contact3 = new Contact();
-            contact3.Id = Guid.NewGuid();
-            contact3.FirstName = "ben";
-            contact3.LastName = "Afflect";
-            DbConnection.Insert(contact3);
-
-            var contact4 = new Contact();
-            contact4.Id = Guid.NewGuid();
-            contact4.FirstName = "Satya";
-            contact4.LastName = "Nandela";
-            //            contact4.IsActive = true;
-            DbConnection.Insert(contact4);
-
-            var contact5 = new Contact();
-            contact5.Id = Guid.NewGuid();
-            contact5.FirstName = "Zelda";
-            DbConnection.Insert(contact5);
-
-            var contact6 = new Contact();
-            contact6.Id = Guid.NewGuid();
-            contact6.FirstName = "Jennifer";
-            contact6.LastName = "Gates";
-            DbConnection.Insert(contact6);
-
-            var contact7 = new Contact();
-            contact7.Id = Guid.NewGuid();
-            contact7.FirstName = "Maple";
-            DbConnection.Insert(contact7);
-
-            var contact8 = new Contact();
-            contact8.Id = Guid.NewGuid();
-            contact8.FirstName = "George";
-            DbConnection.Insert(contact8);
-
-            var contact9 = new Contact();
-            contact9.Id = Guid.NewGuid();
-            contact9.Organization = "Null Org.";
-            DbConnection.Insert(contact9);
-
-            var contact10 = new Contact();
-            contact10.Id = Guid.NewGuid();
-            contact10.FirstName = "";
-            DbConnection.Insert(contact10);
-
-            // Phone numbers
-            var number1 = new PhoneNumber();
-            number1.Id = Guid.NewGuid();
-            number1.ContactId = contact1.Id;
-            number1.Number = "111";
-            number1.Type = "work";
-            DbConnection.Insert(number1);
-
-            var number2 = new PhoneNumber();
-            number2.Id = Guid.NewGuid();
-            number2.ContactId = contact2.Id;
-            number2.Number = "0123456789";
-            number2.Type = "work";
-            DbConnection.Insert(number2);
-
-            var number3 = new PhoneNumber();
-            number3.Id = Guid.NewGuid();
-            number3.ContactId = contact2.Id;
-            number3.Number = "0987654321";
-            number3.Type = "home";
-            DbConnection.Insert(number3);
-
-            // Address
-            var address1 = new Address();
-            address1.Id = Guid.NewGuid();
-            address1.Type = "home";
-            address1.StreetLine1 = "1 Capitol Hill";
-            address1.StreetLine2 = "Apt 1";
-            address1.City = "Seattle";
-            address1.Province = "WA";
-            address1.Country = "United States";
-            address1.ContactId = contact2.Id;
-            DbConnection.Insert(address1);
-
-            var address2 = new Address();
-            address2.Id = Guid.NewGuid();
-            address2.Type = "work";
-            address2.StreetLine1 = "1 Microsoft Way";
-            address2.City = "Redmond";
-            address2.ContactId = contact2.Id;
-            DbConnection.Insert(address2);
-
-            // Email
-            var email1 = new Email();
-            email1.Id = Guid.NewGuid();
-            email1.Address = "bill@microsoft.com";
-            email1.Type = "work";
-            email1.ContactId = contact2.Id;
-            DbConnection.Insert(email1);
-
-            // Url
-//            var url1 = new Url();
-//            url1.Id = Guid.NewGuid();
-//            url1.Type = "home";
-//            url1.Link = "billgates.com";
-//            url1.ContactId = contact2.Id;
-//            DbConnection.Insert(url1);
-//
-//            var url2 = new Url();
-//            url2.Id = Guid.NewGuid();
-//            url2.Type = "work";
-//            url2.Link = "billandmelinda.org";
-//            url2.ContactId = contact2.Id;
-//            DbConnection.Insert(url2);
-
-            // IMs
-            var im1 = new InstantMessage();
-            im1.Id = Guid.NewGuid();
-            im1.Type = "skype";
-            im1.Nickname = "billgates";
-            im1.ContactId = contact2.Id;
-            DbConnection.Insert(im1);
-
-            // Special Dates
-            var date1 = new SpecialDate();
-            date1.Id = Guid.NewGuid();
-            date1.Type = "other";
-            date1.Date = new DateTime(1975, 4, 4);
-            date1.ContactId = contact2.Id;
-            DbConnection.Insert(date1);
-
-            // Tags
-            var tag1 = GetRowsByName<Tag>("Colleague").First();
-            var tag2 = GetRowsByName<Tag>("Important").First();
-
-            var tagMap1 = new ContactTagMap()
-            {
-                Id = Guid.NewGuid(),
-                ContactId = contact2.Id,
-                TagId = tag1.Id,
-                Detail = "Chairman of Microsoft",
-            };
-            DbConnection.Insert(tagMap1);
-
-            var tagMap2 = new ContactTagMap()
-            {
-                Id = Guid.NewGuid(),
-                ContactId = contact2.Id,
-                TagId = tag2.Id,
-            };
-            DbConnection.Insert(tagMap2);
-
-            // Relationship
-            var connType1 = GetRowsByName<RelationshipType>("Advisor").First();
-            var connType2 = GetRowsByName<RelationshipType>("Daughter").First();
-
-            var conn1 = new Relationship()
-            {
-                Id = Guid.NewGuid(),
-                FromContactId = contact2.Id,
-                ToContactId = contact4.Id,
-                RelationshipTypeId = connType1.Id,
-                Detail = "Bill will advise Satya with his new CEO role.",
-            };
-            DbConnection.Insert(conn1);
-            var conn2 = new Relationship()
-            {
-                Id = Guid.NewGuid(),
-                FromContactId = contact6.Id,
-                ToContactId = contact2.Id,
-                RelationshipTypeId = connType2.Id,
-            };
-            DbConnection.Insert(conn2);
-
-            Console.WriteLine("stop adding data");
-        }
-
-        #endregion
-
         #region Create massive dummy data and Sync Queue
 
+        /// <summary>
+        /// Creates the massive data and sync queue.
+        /// </summary>
+        /// <param name="prefix">Prefix.</param>
+        /// <param name="amount">Amount must be an even number.</param>
         public void CreateMassiveDataAndSyncQueue(string prefix, int amount)
         {
-            // Contacts and directly related info
+            if (amount % 2 != 0)
+            {
+                return;
+            }
+
+            Guid previousGuid = Guid.Empty;
+
             for (var i = 1; i <= amount; i++)
             {
+                // Contacts and directly related info
                 var contact = new Contact
                 {
                     Id = Guid.NewGuid(),
                     FirstName = String.Format("{0}_Contact_{1}", prefix, i),
+                    LastModified = new DateTime(2016, 1, 1),
                 };
-                this.DbConnection.Insert(contact);
+                DbConnection.Insert(contact);
+
+                DbConnection.Insert(new SyncOperation
+                    {
+                        Id = Guid.NewGuid(),
+                        Verb = "Post",
+                        ResourceName = "Contact",
+                        ResourceId = contact.Id,
+                    }
+                );
 
                 var phoneNumber = new PhoneNumber
                 { 
                     Id = Guid.NewGuid(),
                     ContactId = contact.Id,
                     Number = i.ToString(),
+                    LastModified = new DateTime(2016, 1, 1),
                 };
-                this.DbConnection.Insert(phoneNumber);
+                DbConnection.Insert(phoneNumber);
+
+                DbConnection.Insert(new SyncOperation
+                    {
+                        Id = Guid.NewGuid(),
+                        Verb = "Post",
+                        ResourceName = "PhoneNumber",
+                        ResourceId = phoneNumber.Id,
+                    }
+                );
 
                 var address = new Address
                 {
                     Id = Guid.NewGuid(),
                     ContactId = contact.Id,
                     StreetLine1 = String.Format("{0}_Address_{1}", prefix, i),
+                    LastModified = new DateTime(2016, 1, 1),
                 };
-                this.DbConnection.Insert(address);
+                DbConnection.Insert(address);
+
+                DbConnection.Insert(new SyncOperation
+                    {
+                        Id = Guid.NewGuid(),
+                        Verb = "Post",
+                        ResourceName = "Address",
+                        ResourceId = address.Id,
+                    }
+                );
 
                 var email = new Email
                 {
                     Id = Guid.NewGuid(),
                     ContactId = contact.Id,
                     Address = String.Format("{0}_Email_{1}", prefix, i),
+                    LastModified = new DateTime(2016, 1, 1),
                 };
-                this.DbConnection.Insert(email);
+                DbConnection.Insert(email);
+
+                DbConnection.Insert(new SyncOperation
+                    {
+                        Id = Guid.NewGuid(),
+                        Verb = "Post",
+                        ResourceName = "Email",
+                        ResourceId = email.Id,
+                    }
+                );
 
                 var im = new InstantMessage
                 {
                     Id = Guid.NewGuid(),
                     ContactId = contact.Id,
                     Nickname = String.Format("{0}_InstantMessage_{1}", prefix, i),
+                    LastModified = new DateTime(2016, 1, 1),
                 };
-                this.DbConnection.Insert(im);
+                DbConnection.Insert(im);
+
+                DbConnection.Insert(new SyncOperation
+                    {
+                        Id = Guid.NewGuid(),
+                        Verb = "Post",
+                        ResourceName = "InstantMessage",
+                        ResourceId = im.Id,
+                    }
+                );
 
                 var specialDate = new SpecialDate
                 {
                     Id = Guid.NewGuid(),
                     ContactId = contact.Id,
                     Date = new DateTime(1975, 4, 4),
+                    Type = String.Format("{0}_SpecialDate_{1}", prefix, i),
+                    LastModified = new DateTime(2016, 1, 1),
                 };
-            } 
+                DbConnection.Insert(specialDate);
+
+                DbConnection.Insert(new SyncOperation
+                    {
+                        Id = Guid.NewGuid(),
+                        Verb = "Post",
+                        ResourceName = "SpecialDate",
+                        ResourceId = specialDate.Id,
+                    }
+                );
+
+                // Tags and relationships
+                if (i % 2 == 0)
+                {
+                    var currentGuid = contact.Id;
+
+                    var tag = new Tag
+                    { 
+                        Id = Guid.NewGuid(),
+                        Name = String.Format("{0}_Tag_{1}", prefix, i),
+                        LastModified = new DateTime(2016, 1, 1),
+                    };
+                    DbConnection.Insert(tag);
+
+                    DbConnection.Insert(new SyncOperation
+                        {
+                            Id = Guid.NewGuid(),
+                            Verb = "Post",
+                            ResourceName = "Tag",
+                            ResourceId = tag.Id,
+                        }
+                    );
+
+                    var tagMap = new ContactTagMap
+                    {
+                        Id = Guid.NewGuid(),
+                        TagId = tag.Id,
+                        ContactId = currentGuid,
+                        Detail = String.Format("{0}_TagMap_{1}", prefix, i),
+                        LastModified = new DateTime(2016, 1, 1),
+                    };
+                    DbConnection.Insert(tagMap);
+
+                    DbConnection.Insert(new SyncOperation
+                        {
+                            Id = Guid.NewGuid(),
+                            Verb = "Post",
+                            ResourceName = "ContactTagMap",
+                            ResourceId = tagMap.Id,
+                        }
+                    );
+
+                    var relationshipType = new RelationshipType
+                    {
+                        Id = Guid.NewGuid(),
+                        Name = String.Format("{0}_RelationshipType_{1}", prefix, i),
+                        LastModified = new DateTime(2016, 1, 1),
+                    };
+                    DbConnection.Insert(relationshipType);
+
+                    DbConnection.Insert(new SyncOperation
+                        {
+                            Id = Guid.NewGuid(),
+                            Verb = "Post",
+                            ResourceName = "RelationshipType",
+                            ResourceId = relationshipType.Id,
+                        }
+                    );
+
+                    var relationship = new Relationship
+                    {
+                        Id = Guid.NewGuid(),
+                        FromContactId = previousGuid,
+                        ToContactId = currentGuid,
+                        RelationshipTypeId = relationshipType.Id,
+                        Detail = String.Format("{0}_Relationship_{1}", prefix, i),
+                        LastModified = new DateTime(2016, 1, 1),
+                    };
+                    DbConnection.Insert(relationship);
+
+                    DbConnection.Insert(new SyncOperation
+                        {
+                            Id = Guid.NewGuid(),
+                            Verb = "Post",
+                            ResourceName = "Relationship",
+                            ResourceId = relationship.Id,
+                        }
+                    );
+                }
+                else
+                {
+                    previousGuid = contact.Id;
+                }
+            }
         }
 
         #endregion
