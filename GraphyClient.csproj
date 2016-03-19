@@ -58,6 +58,7 @@
     <Compile Include="Database\IContactIdRelated.cs" />
     <Compile Include="Database\IIdContainer.cs" />
     <Compile Include="Database\INameContainer.cs" />
+    <Compile Include="Database\SyncOperation.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
