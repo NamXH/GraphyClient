@@ -343,7 +343,7 @@ namespace GraphyClient
                 {
                     Id = Guid.NewGuid(),
                     FirstName = String.Format("{0}_Contact_{1}", prefix, i),
-                    LastModified = new DateTime(2016, 1, 1),
+                    LastModified = new DateTime(2016, 1, 1, 0, 0, 0, DateTimeKind.Utc), 
                 };
                 DbConnection.Insert(contact);
 
@@ -361,7 +361,7 @@ namespace GraphyClient
                     Id = Guid.NewGuid(),
                     ContactId = contact.Id,
                     Number = i.ToString(),
-                    LastModified = new DateTime(2016, 1, 1),
+                    LastModified = new DateTime(2016, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 };
                 DbConnection.Insert(phoneNumber);
 
@@ -379,7 +379,7 @@ namespace GraphyClient
                     Id = Guid.NewGuid(),
                     ContactId = contact.Id,
                     StreetLine1 = String.Format("{0}_Address_{1}", prefix, i),
-                    LastModified = new DateTime(2016, 1, 1),
+                    LastModified = new DateTime(2016, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 };
                 DbConnection.Insert(address);
 
@@ -397,7 +397,7 @@ namespace GraphyClient
                     Id = Guid.NewGuid(),
                     ContactId = contact.Id,
                     Address = String.Format("{0}_Email_{1}", prefix, i),
-                    LastModified = new DateTime(2016, 1, 1),
+                    LastModified = new DateTime(2016, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 };
                 DbConnection.Insert(email);
 
@@ -415,7 +415,7 @@ namespace GraphyClient
                     Id = Guid.NewGuid(),
                     ContactId = contact.Id,
                     Nickname = String.Format("{0}_InstantMessage_{1}", prefix, i),
-                    LastModified = new DateTime(2016, 1, 1),
+                    LastModified = new DateTime(2016, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 };
                 DbConnection.Insert(im);
 
@@ -434,7 +434,7 @@ namespace GraphyClient
                     ContactId = contact.Id,
                     Date = new DateTime(1975, 4, 4),
                     Type = String.Format("{0}_SpecialDate_{1}", prefix, i),
-                    LastModified = new DateTime(2016, 1, 1),
+                    LastModified = new DateTime(2016, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 };
                 DbConnection.Insert(specialDate);
 
@@ -456,7 +456,7 @@ namespace GraphyClient
                     { 
                         Id = Guid.NewGuid(),
                         Name = String.Format("{0}_Tag_{1}", prefix, i),
-                        LastModified = new DateTime(2016, 1, 1),
+                        LastModified = new DateTime(2016, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                     };
                     DbConnection.Insert(tag);
 
@@ -475,7 +475,7 @@ namespace GraphyClient
                         TagId = tag.Id,
                         ContactId = currentGuid,
                         Detail = String.Format("{0}_TagMap_{1}", prefix, i),
-                        LastModified = new DateTime(2016, 1, 1),
+                        LastModified = new DateTime(2016, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                     };
                     DbConnection.Insert(tagMap);
 
@@ -492,7 +492,7 @@ namespace GraphyClient
                     {
                         Id = Guid.NewGuid(),
                         Name = String.Format("{0}_RelationshipType_{1}", prefix, i),
-                        LastModified = new DateTime(2016, 1, 1),
+                        LastModified = new DateTime(2016, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                     };
                     DbConnection.Insert(relationshipType);
 
@@ -512,7 +512,7 @@ namespace GraphyClient
                         ToContactId = currentGuid,
                         RelationshipTypeId = relationshipType.Id,
                         Detail = String.Format("{0}_Relationship_{1}", prefix, i),
-                        LastModified = new DateTime(2016, 1, 1),
+                        LastModified = new DateTime(2016, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                     };
                     DbConnection.Insert(relationship);
 
@@ -537,6 +537,7 @@ namespace GraphyClient
         public bool Sync()
         {
             #region Get all server records
+
 
 
             #endregion

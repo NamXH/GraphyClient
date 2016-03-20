@@ -9,7 +9,7 @@ namespace GraphyClient
 {
     public static class SyncHelper
     {
-        public static async Task<List<T>> GetAsync<T>(string resourceEndpoint)
+        public static async Task<KeyValuePair<int, List<T>>> GetAsync<T>(string resourceEndpoint)
         {
             var uri = String.Format("{0}{1}/", ServerConstants.ApiRoot, resourceEndpoint);
             using (var client = new HttpClient())
@@ -20,16 +20,18 @@ namespace GraphyClient
                 {
                     var contentString = response.Content.ReadAsStringAsync().Result;
                     var result = JsonConvert.DeserializeObject<List<T>>(contentString);
-                    return result;
+
+                    return new KeyValuePair<int, List<T>>((int)response.StatusCode, result);
                 }
                 else
                 {
-                    return null;
+                    return new KeyValuePair<int, List<T>>((int)response.StatusCode, null);
+                    ;
                 }
             }
         }
 
-        public static async Task<bool> PostAsync(string resourceEndpoint, object data)
+        public static async Task<int> PostAsync(string resourceEndpoint, object data)
         {
             var uri = String.Format("{0}{1}/", ServerConstants.ApiRoot, resourceEndpoint);
 
@@ -40,19 +42,44 @@ namespace GraphyClient
             {
                 var response = await client.PostAsync(uri, body);
 
-                if (response.IsSuccessStatusCode)
-                {
-                    // To be careful we can check the json result. However, it will be slower.
+                return (int)response.StatusCode;
+
+//                if (response.IsSuccessStatusCode)
+//                {
+                // To be careful we can check the json result. However, it will be slower.
 //                    var contentString = response.Content.ReadAsStringAsync().Result;
 //                    var result = JsonConvert.DeserializeObject<T>(contentString);
-
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
+//                }
             }
+        }
+
+        public static async Task<int> PutAsync(string resourceEndpoint, string resourceId, object data)
+        {
+            var uri = String.Format("{0}{1}/{2}/", ServerConstants.ApiRoot, resourceEndpoint, resourceId);
+
+            var jsonString = JsonConvert.SerializeObject(data);
+            var body = new StringContent(jsonString, Encoding.UTF8, "application/json");
+
+            using (var client = new HttpClient())
+            {
+                var response = await client.PutAsync(uri, body);
+
+                return (int)response.StatusCode;
+            } 
+        }
+
+        public static async Task<int> DeleteAsync(string resourceEndpoint, string resourceId, DateTime objectLastModified)
+        {
+            var uri = String.Format("{0}{1}/{2}/", ServerConstants.ApiRoot, resourceEndpoint, resourceId);
+
+            using (var client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.IfUnmodifiedSince = objectLastModified; // By default, convert UTC to DatetimeOffset: https://msdn.microsoft.com/en-us/library/bb546101(v=vs.110).aspx
+
+                var response = await client.DeleteAsync(uri);
+
+                return (int)response.StatusCode;
+            } 
         }
     }
 }

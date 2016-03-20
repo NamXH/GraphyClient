@@ -7,7 +7,7 @@ using System.Text;
 
 namespace GraphyClient
 {
-    public class Client
+    public class ClientExamples
     {
         public async Task GetTest()
         {
@@ -71,7 +71,7 @@ namespace GraphyClient
             } 
         }
 
-        public Client()
+        public ClientExamples()
         {
         }
     }

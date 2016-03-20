@@ -43,7 +43,6 @@
     <Compile Include="SQLite.cs" />
     <Compile Include="SQLiteAsync.cs" />
     <Compile Include="ServerConstants.cs" />
-    <Compile Include="Client.cs" />
     <Compile Include="Database\Tag.cs" />
     <Compile Include="Database\RelationshipType.cs" />
     <Compile Include="Database\ContactTagMap.cs" />
@@ -60,6 +59,7 @@
     <Compile Include="Database\INameContainer.cs" />
     <Compile Include="Database\SyncOperation.cs" />
     <Compile Include="SyncHelper.cs" />
+    <Compile Include="ClientExamples.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
