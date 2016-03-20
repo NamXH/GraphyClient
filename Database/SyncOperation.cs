@@ -10,7 +10,7 @@ namespace GraphyClient
 
         public string Verb { get; set; }
 
-        public string ResourceName { get; set; }
+        public string ResourceEndpoint { get; set; }
 
         public Guid ResourceId { get; set; }
     }

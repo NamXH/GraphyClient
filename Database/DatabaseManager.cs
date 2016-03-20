@@ -47,6 +47,7 @@ namespace GraphyClient
 
         /// <summary>
         /// Initializes a new instance of the <see cref="GraphyClient.DatabaseManager"/> class.
+        /// Create data based on Amount.
         /// </summary>
         /// <param name="dbName">Db name.</param>
         /// <param name="amount">Amount must be an even number</param>
@@ -70,6 +71,8 @@ namespace GraphyClient
                 DbConnection = new SQLiteConnection(DbPath);
             }
         }
+
+        #region Setup Schema
 
         public void SetupSchema()
         {
@@ -112,9 +115,11 @@ namespace GraphyClient
 //            var createUrl = "CREATE TABLE Url (Id VARCHAR PRIMARY KEY NOT NULL, Type VARCHAR, Link VARCHAR, ContactId VARCHAR, LastModified DATETIME, IsDeleted BOOL DEFAULT 0, FOREIGN KEY(ContactId) REFERENCES Contact(Id) ON DELETE CASCADE ON UPDATE CASCADE)";
 //            DbConnection.Execute(createUrl);
 
-            var createSyncOperation = "CREATE TABLE SyncOperation (Id VARCHAR PRIMARY KEY NOT NULL, Verb VARCHAR, ResourceName VARCHAR, ResourceId VARCHAR)";
+            var createSyncOperation = "CREATE TABLE SyncOperation (Id VARCHAR PRIMARY KEY NOT NULL, Verb VARCHAR, ResourceEndpoint VARCHAR, ResourceId VARCHAR)";
             DbConnection.Execute(createSyncOperation);
         }
+
+        #endregion
 
         #region Utility Methods copied from project GraphyPCL
 
@@ -346,7 +351,7 @@ namespace GraphyClient
                     {
                         Id = Guid.NewGuid(),
                         Verb = "Post",
-                        ResourceName = "Contact",
+                        ResourceEndpoint = "contacts",
                         ResourceId = contact.Id,
                     }
                 );
@@ -364,7 +369,7 @@ namespace GraphyClient
                     {
                         Id = Guid.NewGuid(),
                         Verb = "Post",
-                        ResourceName = "PhoneNumber",
+                        ResourceEndpoint = "phone_numbers",
                         ResourceId = phoneNumber.Id,
                     }
                 );
@@ -382,7 +387,7 @@ namespace GraphyClient
                     {
                         Id = Guid.NewGuid(),
                         Verb = "Post",
-                        ResourceName = "Address",
+                        ResourceEndpoint = "addresses",
                         ResourceId = address.Id,
                     }
                 );
@@ -400,7 +405,7 @@ namespace GraphyClient
                     {
                         Id = Guid.NewGuid(),
                         Verb = "Post",
-                        ResourceName = "Email",
+                        ResourceEndpoint = "emails",
                         ResourceId = email.Id,
                     }
                 );
@@ -418,7 +423,7 @@ namespace GraphyClient
                     {
                         Id = Guid.NewGuid(),
                         Verb = "Post",
-                        ResourceName = "InstantMessage",
+                        ResourceEndpoint = "instant_messages",
                         ResourceId = im.Id,
                     }
                 );
@@ -437,7 +442,7 @@ namespace GraphyClient
                     {
                         Id = Guid.NewGuid(),
                         Verb = "Post",
-                        ResourceName = "SpecialDate",
+                        ResourceEndpoint = "special_dates",
                         ResourceId = specialDate.Id,
                     }
                 );
@@ -459,7 +464,7 @@ namespace GraphyClient
                         {
                             Id = Guid.NewGuid(),
                             Verb = "Post",
-                            ResourceName = "Tag",
+                            ResourceEndpoint = "tags",
                             ResourceId = tag.Id,
                         }
                     );
@@ -478,7 +483,7 @@ namespace GraphyClient
                         {
                             Id = Guid.NewGuid(),
                             Verb = "Post",
-                            ResourceName = "ContactTagMap",
+                            ResourceEndpoint = "contact_tag_maps",
                             ResourceId = tagMap.Id,
                         }
                     );
@@ -495,7 +500,7 @@ namespace GraphyClient
                         {
                             Id = Guid.NewGuid(),
                             Verb = "Post",
-                            ResourceName = "RelationshipType",
+                            ResourceEndpoint = "relationship_types",
                             ResourceId = relationshipType.Id,
                         }
                     );
@@ -515,7 +520,7 @@ namespace GraphyClient
                         {
                             Id = Guid.NewGuid(),
                             Verb = "Post",
-                            ResourceName = "Relationship",
+                            ResourceEndpoint = "relationships",
                             ResourceId = relationship.Id,
                         }
                     );
@@ -528,6 +533,16 @@ namespace GraphyClient
         }
 
         #endregion
+
+        public bool Sync()
+        {
+            #region Get all server records
+
+
+            #endregion
+
+            return true;
+        }
     }
 }
 
