@@ -4,6 +4,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace GraphyClient
 {
@@ -258,7 +259,7 @@ namespace GraphyClient
             return createdGuids;
         }
 
-        public void DeleteContact(Guid contactId)
+        public void DeleteContactAndRelatedInfo(Guid contactId)
         {
             // PCL does not support reflection to call generic method so we have to copy&paste
             // http://stackoverflow.com/questions/232535/how-to-use-reflection-to-call-generic-method
@@ -320,10 +321,126 @@ namespace GraphyClient
 
         #endregion
 
+        #region New Utility Methods
+
+        /// <summary>
+        /// Get a sync op according to its resource Id. Same performance as DbConnection.Get.
+        /// </summary>
+        /// <returns>The row.</returns>
+        /// <param name="id">Identifier.</param>
+        /// <typeparam name="T">The 1st type parameter.</typeparam>
+        public SyncOperation GetSyncOperationByResourceId(Guid resourceId)
+        {
+            return DbConnection.Table<SyncOperation>().Where(x => x.ResourceId == resourceId).SingleOrDefault(); // Each sync op has a distinct resource Id
+        }
+
+        /// <summary>
+        /// Deletes the sync operation.
+        /// </summary>
+        /// <returns>Return the number of rows deleted.</returns>
+        /// <param name="id">Identifier.</param>
+        public int DeleteSyncOperation(Guid id)
+        {
+            return DbConnection.Delete<SyncOperation>(id);
+        }
+
+        /// <summary>
+        /// Deletes the sync operation by resource identifier.
+        /// </summary>
+        /// <returns>Return the number of rows deleted.</returns>
+        /// <param name="resourceId">Resource identifier.</param>
+        public int DeleteSyncOperationByResourceId(Guid resourceId)
+        {
+            var syncOp = GetSyncOperationByResourceId(resourceId);
+            if (syncOp != null)
+            {
+                return DbConnection.Delete(syncOp);
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        public void DeleteContactAndRelatedInfoAndSyncOps(Guid contactId)
+        {
+            // PCL does not support reflection to call generic method so we have to copy&paste
+            // http://stackoverflow.com/questions/232535/how-to-use-reflection-to-call-generic-method
+
+            // Delete basic info
+            var phoneNumbers = GetRowsRelatedToContact<PhoneNumber>(contactId);
+            foreach (var element in phoneNumbers)
+            {
+                DeleteSyncOperationByResourceId(element.Id);
+                DbConnection.Delete(element);
+            }
+
+            var emails = GetRowsRelatedToContact<Email>(contactId);
+            foreach (var element in emails)
+            {
+                DeleteSyncOperationByResourceId(element.Id);
+                DbConnection.Delete(element);
+            }
+
+//            var addresses = GetRowsRelatedToContact<Address>(contactId);
+//            foreach (var element in addresses)
+//            {
+//                DbConnection.Delete(element);
+//            }
+//
+//            var urls = GetRowsRelatedToContact<Url>(contactId);
+//            foreach (var element in urls)
+//            {
+//                DbConnection.Delete(element);
+//            }
+//            var dates = GetRowsRelatedToContact<SpecialDate>(contactId);
+//            foreach (var element in dates)
+//            {
+//                DbConnection.Delete(element);
+//            }
+//            var ims = GetRowsRelatedToContact<InstantMessage>(contactId);
+//            foreach (var element in ims)
+//            {
+//                DbConnection.Delete(element);
+//            }
+
+            // Delete contact-tag map, not delete tag even if it is only appear in this contact
+            var contactTagMaps = GetRowsRelatedToContact<ContactTagMap>(contactId);
+            foreach (var map in contactTagMaps)
+            {
+                DeleteSyncOperationByResourceId(map.Id);
+                DbConnection.Delete(map);
+            }
+
+            // Delete relationship, not delete relationship type
+            var fromRelationships = GetRelationshipsFromContact(contactId);
+            var toRelationships = GetRelationshipsToContact(contactId);
+            foreach (var relationship in fromRelationships)
+            {
+                DeleteSyncOperationByResourceId(relationship.Id);
+                DbConnection.Delete(relationship);
+            }
+            foreach (var relationship in toRelationships)
+            {
+                DeleteSyncOperationByResourceId(relationship.Id);
+                DbConnection.Delete(relationship);
+            }
+
+            // Delete contact
+            DeleteSyncOperationByResourceId(contactId);
+            DbConnection.Delete<Contact>(contactId);
+        }
+
+        #endregion
+
         #region Create massive dummy data and Sync Queue
 
         /// <summary>
         /// Creates the massive data and sync queue.
+        /// Number of contacts equal to Amount. Number of tags, number of relationship types equal to amount / 2.
+        /// Each contact has: first name, 1 phone number, 1 email.
+        /// Each even contact has: 1 tag.
+        /// Each relationship connect 1 odd contact to an even contact. E.g. 1->2, 3->4
         /// </summary>
         /// <param name="prefix">Prefix.</param>
         /// <param name="amount">Amount must be an even number.</param>
@@ -374,31 +491,13 @@ namespace GraphyClient
                     }
                 );
 
-                var address = new Address
-                {
-                    Id = Guid.NewGuid(),
-                    ContactId = contact.Id,
-                    StreetLine1 = String.Format("{0}_Address_{1}", prefix, i),
-                    LastModified = new DateTime(2016, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-                };
-                DbConnection.Insert(address);
-
-                DbConnection.Insert(new SyncOperation
+                var email = new Email
                     {
                         Id = Guid.NewGuid(),
-                        Verb = "Post",
-                        ResourceEndpoint = "addresses",
-                        ResourceId = address.Id,
-                    }
-                );
-
-                var email = new Email
-                {
-                    Id = Guid.NewGuid(),
-                    ContactId = contact.Id,
-                    Address = String.Format("{0}_Email_{1}", prefix, i),
-                    LastModified = new DateTime(2016, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-                };
+                        ContactId = contact.Id,
+                        Address = String.Format("{0}_Email_{1}", prefix, i),
+                        LastModified = new DateTime(2016, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    };
                 DbConnection.Insert(email);
 
                 DbConnection.Insert(new SyncOperation
@@ -410,42 +509,60 @@ namespace GraphyClient
                     }
                 );
 
-                var im = new InstantMessage
-                {
-                    Id = Guid.NewGuid(),
-                    ContactId = contact.Id,
-                    Nickname = String.Format("{0}_InstantMessage_{1}", prefix, i),
-                    LastModified = new DateTime(2016, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-                };
-                DbConnection.Insert(im);
+//                var address = new Address
+//                {
+//                    Id = Guid.NewGuid(),
+//                    ContactId = contact.Id,
+//                    StreetLine1 = String.Format("{0}_Address_{1}", prefix, i),
+//                    LastModified = new DateTime(2016, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+//                };
+//                DbConnection.Insert(address);
+//
+//                DbConnection.Insert(new SyncOperation
+//                    {
+//                        Id = Guid.NewGuid(),
+//                        Verb = "Post",
+//                        ResourceEndpoint = "addresses",
+//                        ResourceId = address.Id,
+//                    }
+//                );
 
-                DbConnection.Insert(new SyncOperation
-                    {
-                        Id = Guid.NewGuid(),
-                        Verb = "Post",
-                        ResourceEndpoint = "instant_messages",
-                        ResourceId = im.Id,
-                    }
-                );
+//                var im = new InstantMessage
+//                {
+//                    Id = Guid.NewGuid(),
+//                    ContactId = contact.Id,
+//                    Nickname = String.Format("{0}_InstantMessage_{1}", prefix, i),
+//                    LastModified = new DateTime(2016, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+//                };
+//                DbConnection.Insert(im);
+//
+//                DbConnection.Insert(new SyncOperation
+//                    {
+//                        Id = Guid.NewGuid(),
+//                        Verb = "Post",
+//                        ResourceEndpoint = "instant_messages",
+//                        ResourceId = im.Id,
+//                    }
+//                );
 
-                var specialDate = new SpecialDate
-                {
-                    Id = Guid.NewGuid(),
-                    ContactId = contact.Id,
-                    Date = new DateTime(1975, 4, 4),
-                    Type = String.Format("{0}_SpecialDate_{1}", prefix, i),
-                    LastModified = new DateTime(2016, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-                };
-                DbConnection.Insert(specialDate);
-
-                DbConnection.Insert(new SyncOperation
-                    {
-                        Id = Guid.NewGuid(),
-                        Verb = "Post",
-                        ResourceEndpoint = "special_dates",
-                        ResourceId = specialDate.Id,
-                    }
-                );
+//                var specialDate = new SpecialDate
+//                {
+//                    Id = Guid.NewGuid(),
+//                    ContactId = contact.Id,
+//                    Date = new DateTime(1975, 4, 4),
+//                    Type = String.Format("{0}_SpecialDate_{1}", prefix, i),
+//                    LastModified = new DateTime(2016, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+//                };
+//                DbConnection.Insert(specialDate);
+//
+//                DbConnection.Insert(new SyncOperation
+//                    {
+//                        Id = Guid.NewGuid(),
+//                        Verb = "Post",
+//                        ResourceEndpoint = "special_dates",
+//                        ResourceId = specialDate.Id,
+//                    }
+//                );
 
                 // Tags and relationships
                 if (i % 2 == 0)
@@ -534,11 +651,70 @@ namespace GraphyClient
 
         #endregion
 
-        public bool Sync()
+        public async Task<bool> Sync()
         {
             #region Get all server records
 
+            var getRequestsResult = await SyncHelper.GetAsync<Contact>("contacts");
 
+            if (getRequestsResult.Key != 200)
+            {
+                return false;
+            }
+
+            foreach (var serverContact in getRequestsResult.Value)
+            {
+//                var clientContact = GetRow<Contact>(serverContact.Id); // Old style, can be slower
+                Contact clientContact = null;
+                try
+                {
+                    clientContact = DbConnection.Get<Contact>(serverContact.Id);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message); // clientContact will be null if exception occur.
+                }
+
+                if ((clientContact == null) || (clientContact.LastModified < serverContact.LastModified))
+                {
+                    var syncOp = GetSyncOperationByResourceId(serverContact.Id); // same code as DbConnection.Get<T>(Linq Predicate)
+
+                    if (syncOp != null)
+                    {
+                        if (syncOp.Verb == "Post")
+                        {
+                            throw new Exception("There's a Post in Sync Queue with the same Id as a server record. Phase: Get.");
+                        }
+
+                        if (syncOp.Verb == "Put")
+                        {
+                            if (clientContact == null)
+                            {
+                                throw new Exception("Record not exists while there is a assocciated Put. Phase: Get.");
+                            }
+
+                            DeleteSyncOperation(syncOp.Id);
+
+                            if (clientContact.IsDeleted)
+                            {
+                                
+                            }
+                            else
+                            {
+                                
+                            }
+                        }
+                        else
+                        {
+                            // verb == "Delete"
+                        }
+                    }
+                    else
+                    {
+                        
+                    }
+                }
+            }
 
             #endregion
 
