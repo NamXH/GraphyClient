@@ -73,6 +73,20 @@ namespace GraphyClient
             }
         }
 
+        public DatabaseManager(string dbName)
+        {
+            _dbName = dbName;
+
+            if (!this.Exists())
+            {
+                throw new Exception(String.Format("Database {0} does not exist", dbName));
+            }
+            else
+            {
+                DbConnection = new SQLiteConnection(DbPath);
+            }
+        }
+
         #region Setup Schema
 
         public void SetupSchema()
@@ -93,18 +107,14 @@ namespace GraphyClient
             // http://blog.codinghorror.com/primary-keys-ids-versus-guids/
             // Using Sqlite-net, we use Guid in C# code. When insert/query Guid will be automatically converted to Varchar and vice versa!!
             // If there is a weird behavior in the database, CHECK THIS CONVERSION!
+
             var createContact = "CREATE TABLE Contact (Id VARCHAR PRIMARY KEY NOT NULL, FirstName VARCHAR, MiddleName VARCHAR, LastName VARCHAR, Organization VARCHAR, ImageName VARCHAR, LastModified DATETIME, IsDeleted BOOL DEFAULT 0)";
             DbConnection.Execute(createContact);
             var createPhoneNumber = "CREATE TABLE PhoneNumber (Id VARCHAR PRIMARY KEY NOT NULL, Type VARCHAR, Number VARCHAR, ContactId VARCHAR, LastModified DATETIME, IsDeleted BOOL DEFAULT 0, FOREIGN KEY(ContactId) REFERENCES Contact(Id) ON DELETE CASCADE ON UPDATE CASCADE)";
             DbConnection.Execute(createPhoneNumber);
-            var createAddress = "CREATE TABLE Address (Id VARCHAR PRIMARY KEY NOT NULL, Type VARCHAR, StreetLine1 VARCHAR, StreetLine2 VARCHAR, City VARCHAR, Province VARCHAR, PostalCode VARCHAR, Country VARCHAR, ContactId VARCHAR, LastModified DATETIME, IsDeleted BOOL DEFAULT 0, FOREIGN KEY(ContactId) REFERENCES Contact(Id) ON DELETE CASCADE ON UPDATE CASCADE)";
-            DbConnection.Execute(createAddress);
             var createEmail = "CREATE TABLE Email (Id VARCHAR PRIMARY KEY NOT NULL, Type VARCHAR, Address VARCHAR, ContactId VARCHAR, LastModified DATETIME, IsDeleted BOOL DEFAULT 0, FOREIGN KEY(ContactId) REFERENCES Contact(Id) ON DELETE CASCADE ON UPDATE CASCADE)";
             DbConnection.Execute(createEmail);
-            var createSpecialDate = "CREATE TABLE SpecialDate (Id VARCHAR PRIMARY KEY NOT NULL, Type VARCHAR, Date DATETIME, ContactId VARCHAR, LastModified DATETIME, IsDeleted BOOL DEFAULT 0, FOREIGN KEY(ContactId) REFERENCES Contact(Id) ON DELETE CASCADE ON UPDATE CASCADE)";
-            DbConnection.Execute(createSpecialDate);
-            var createInstantMessage = "CREATE TABLE InstantMessage (Id VARCHAR PRIMARY KEY NOT NULL, Type VARCHAR, Nickname VARCHAR, ContactId VARCHAR, LastModified DATETIME, IsDeleted BOOL DEFAULT 0, FOREIGN KEY(ContactId) REFERENCES Contact(Id) ON DELETE CASCADE ON UPDATE CASCADE)";
-            DbConnection.Execute(createInstantMessage);
+
             var createTag = "CREATE TABLE Tag (Id VARCHAR PRIMARY KEY NOT NULL, Name VARCHAR, LastModified DATETIME, IsDeleted BOOL DEFAULT 0)";
             DbConnection.Execute(createTag);
             var createContactTagMap = "CREATE TABLE ContactTagMap (Id VARCHAR PRIMARY KEY NOT NULL, ContactId VARCHAR, TagId VARCHAR, Detail VARCHAR, LastModified DATETIME, IsDeleted BOOL DEFAULT 0, FOREIGN KEY(ContactId) REFERENCES Contact(Id) ON DELETE CASCADE ON UPDATE CASCADE, FOREIGN KEY(TagId) REFERENCES Tag(Id) ON DELETE CASCADE ON UPDATE CASCADE)";
@@ -113,8 +123,16 @@ namespace GraphyClient
             DbConnection.Execute(createRelationshipType);
             var createRelationship = "CREATE TABLE Relationship (Id VARCHAR PRIMARY KEY NOT NULL, Detail VARCHAR, FromContactId VARCHAR, ToContactId VARCHAR, RelationshipTypeId VARCHAR, LastModified DATETIME, IsDeleted BOOL DEFAULT 0, FOREIGN KEY(FromContactId) REFERENCES Contact(Id) ON DELETE CASCADE ON UPDATE CASCADE, FOREIGN KEY(ToContactId) REFERENCES Contact(Id) ON DELETE CASCADE ON UPDATE CASCADE, FOREIGN KEY(RelationshipTypeId) REFERENCES RelationshipType(Id) ON DELETE CASCADE ON UPDATE CASCADE)";
             DbConnection.Execute(createRelationship);
+
+            // Comment out for simplicity !!
+//            var createAddress = "CREATE TABLE Address (Id VARCHAR PRIMARY KEY NOT NULL, Type VARCHAR, StreetLine1 VARCHAR, StreetLine2 VARCHAR, City VARCHAR, Province VARCHAR, PostalCode VARCHAR, Country VARCHAR, ContactId VARCHAR, LastModified DATETIME, IsDeleted BOOL DEFAULT 0, FOREIGN KEY(ContactId) REFERENCES Contact(Id) ON DELETE CASCADE ON UPDATE CASCADE)";
+//            DbConnection.Execute(createAddress);
 //            var createUrl = "CREATE TABLE Url (Id VARCHAR PRIMARY KEY NOT NULL, Type VARCHAR, Link VARCHAR, ContactId VARCHAR, LastModified DATETIME, IsDeleted BOOL DEFAULT 0, FOREIGN KEY(ContactId) REFERENCES Contact(Id) ON DELETE CASCADE ON UPDATE CASCADE)";
 //            DbConnection.Execute(createUrl);
+//            var createSpecialDate = "CREATE TABLE SpecialDate (Id VARCHAR PRIMARY KEY NOT NULL, Type VARCHAR, Date DATETIME, ContactId VARCHAR, LastModified DATETIME, IsDeleted BOOL DEFAULT 0, FOREIGN KEY(ContactId) REFERENCES Contact(Id) ON DELETE CASCADE ON UPDATE CASCADE)";
+//            DbConnection.Execute(createSpecialDate);
+//            var createInstantMessage = "CREATE TABLE InstantMessage (Id VARCHAR PRIMARY KEY NOT NULL, Type VARCHAR, Nickname VARCHAR, ContactId VARCHAR, LastModified DATETIME, IsDeleted BOOL DEFAULT 0, FOREIGN KEY(ContactId) REFERENCES Contact(Id) ON DELETE CASCADE ON UPDATE CASCADE)";
+//            DbConnection.Execute(createInstantMessage);
 
             var createSyncOperation = "CREATE TABLE SyncOperation (Id VARCHAR PRIMARY KEY NOT NULL, Verb VARCHAR, ResourceEndpoint VARCHAR, ResourceId VARCHAR)";
             DbConnection.Execute(createSyncOperation);
@@ -275,26 +293,26 @@ namespace GraphyClient
             {
                 DbConnection.Delete(element);
             }
-            var addresses = GetRowsRelatedToContact<Address>(contactId);
-            foreach (var element in addresses)
-            {
-                DbConnection.Delete(element);
-            }
+//            var addresses = GetRowsRelatedToContact<Address>(contactId);
+//            foreach (var element in addresses)
+//            {
+//                DbConnection.Delete(element);
+//            }
 //            var urls = GetRowsRelatedToContact<Url>(contactId);
 //            foreach (var element in urls)
 //            {
 //                DbConnection.Delete(element);
 //            }
-            var dates = GetRowsRelatedToContact<SpecialDate>(contactId);
-            foreach (var element in dates)
-            {
-                DbConnection.Delete(element);
-            }
-            var ims = GetRowsRelatedToContact<InstantMessage>(contactId);
-            foreach (var element in ims)
-            {
-                DbConnection.Delete(element);
-            }
+//            var dates = GetRowsRelatedToContact<SpecialDate>(contactId);
+//            foreach (var element in dates)
+//            {
+//                DbConnection.Delete(element);
+//            }
+//            var ims = GetRowsRelatedToContact<InstantMessage>(contactId);
+//            foreach (var element in ims)
+//            {
+//                DbConnection.Delete(element);
+//            }
 
             // Delete contact-tag map, not delete tag even if it is only appear in this contact
             var contactTagMaps = GetRowsRelatedToContact<ContactTagMap>(contactId);
