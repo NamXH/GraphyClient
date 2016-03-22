@@ -340,6 +340,27 @@ namespace GraphyClient
         #endregion
 
         #region New Utility Methods
+        /// <summary>
+        /// Get a row according to its primary key
+        /// </summary>
+        /// <returns>The row.</returns>
+        /// <param name="id">Identifier.</param>
+        /// <typeparam name="T">The 1st type parameter.</typeparam>
+        public T GetRowFast<T>(Guid id) where T : class, IIdContainer, new()
+        {
+            T result = null;
+
+            try
+            {
+                result = DbConnection.Get<T>(id);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message); // result will be null if exception occur.
+            }
+
+            return result;
+        }
 
         /// <summary>
         /// Get a sync op according to its resource Id. Same performance as DbConnection.Get.
@@ -350,16 +371,6 @@ namespace GraphyClient
         public SyncOperation GetSyncOperationByResourceId(Guid resourceId)
         {
             return DbConnection.Table<SyncOperation>().Where(x => x.ResourceId == resourceId).SingleOrDefault(); // Each sync op has a distinct resource Id
-        }
-
-        /// <summary>
-        /// Deletes the sync operation.
-        /// </summary>
-        /// <returns>Return the number of rows deleted.</returns>
-        /// <param name="id">Identifier.</param>
-        public int DeleteSyncOperation(Guid id)
-        {
-            return DbConnection.Delete<SyncOperation>(id);
         }
 
         /// <summary>
@@ -377,6 +388,36 @@ namespace GraphyClient
             else
             {
                 return 0;
+            }
+        }
+
+        public Type StringToType(string resourceEndpoint)
+        {
+            switch (resourceEndpoint)
+            {
+                case "contacts":
+                    return typeof(Contact);
+                    break;
+                case "phone_numbers":
+                    return typeof(PhoneNumber);
+                    break;
+                case "emails":
+                    return typeof(Email);
+                    break;
+                case "tags":
+                    return typeof(Tag);
+                    break;
+                case "contact_tag_maps":
+                    return typeof(ContactTagMap);
+                    break;
+                case "relationship_types":
+                    return typeof(RelationshipType);
+                    break;
+                case "relationships":
+                    return typeof(Relationship);
+                    break;
+                default:
+                    throw new Exception("Unregconized type: " + resourceEndpoint);
             }
         }
 
@@ -510,12 +551,12 @@ namespace GraphyClient
                 );
 
                 var email = new Email
-                    {
-                        Id = Guid.NewGuid(),
-                        ContactId = contact.Id,
-                        Address = String.Format("{0}_Email_{1}", prefix, i),
-                        LastModified = new DateTime(2016, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-                    };
+                {
+                    Id = Guid.NewGuid(),
+                    ContactId = contact.Id,
+                    Address = String.Format("{0}_Email_{1}", prefix, i),
+                    LastModified = new DateTime(2016, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                };
                 DbConnection.Insert(email);
 
                 DbConnection.Insert(new SyncOperation
@@ -669,15 +710,16 @@ namespace GraphyClient
 
         #endregion
 
-        public async Task<bool> Sync()
+        public async Task GetServerRecordsAsync()
         {
-            #region Get all server records
-
+            #region Contacts
+            Console.WriteLine("Step 1");
             var getRequestsResult = await SyncHelper.GetAsync<Contact>("contacts");
+            Console.WriteLine("Step 2");
 
             if (getRequestsResult.Key != 200)
             {
-                return false;
+                throw new Exception(String.Format("Get request fail with code: {0}. Phase: Get.", getRequestsResult.Key));
             }
 
             foreach (var serverContact in getRequestsResult.Value)
@@ -693,17 +735,14 @@ namespace GraphyClient
                     Console.WriteLine(e.Message); // clientContact will be null if exception occur.
                 }
 
+                // Server record has last-modified > client record last-modified (same ID) or client doesn't have that record?
                 if ((clientContact == null) || (clientContact.LastModified < serverContact.LastModified))
                 {
-                    var syncOp = GetSyncOperationByResourceId(serverContact.Id); // same code as DbConnection.Get<T>(Linq Predicate)
+                    var syncOp = GetSyncOperationByResourceId(serverContact.Id);
 
+                    // Sync Queue has an operation of that record (same ID): means there's un-synced modification on client?
                     if (syncOp != null)
                     {
-                        if (syncOp.Verb == "Post")
-                        {
-                            throw new Exception("There's a Post in Sync Queue with the same Id as a server record. Phase: Get.");
-                        }
-
                         if (syncOp.Verb == "Put")
                         {
                             if (clientContact == null)
@@ -711,32 +750,87 @@ namespace GraphyClient
                                 throw new Exception("Record not exists while there is a assocciated Put. Phase: Get.");
                             }
 
-                            DeleteSyncOperation(syncOp.Id);
+                            DbConnection.Delete(syncOp);
 
-                            if (clientContact.IsDeleted)
+                            // Sync: Server record has lazy-delete=true?
+                            if (serverContact.IsDeleted)
                             {
-                                
+                                DeleteContactAndRelatedInfoAndSyncOps(clientContact.Id);
                             }
                             else
                             {
-                                
+                                DbConnection.Update(serverContact);
                             }
                         }
                         else
                         {
-                            // verb == "Delete"
+                            // verb == "Delete". Post cannot happen.
+                            DbConnection.Delete(syncOp);
+
+                            // Server record has lazy-delete=true?
+                            if (!serverContact.IsDeleted)
+                            {
+                                DbConnection.Insert(serverContact);
+                            }
                         }
                     }
                     else
                     {
-                        
+                        // Client has the record (Record has an ID which client also have)?
+                        if (clientContact != null)
+                        {
+                            // Server record has lazy-delete=true?
+                            if (serverContact.IsDeleted)
+                            {
+                                DeleteContactAndRelatedInfoAndSyncOps(clientContact.Id);
+                            }
+                            else
+                            {
+                                DbConnection.Update(serverContact);
+                            }
+                        }
+                        else
+                        {
+                            DbConnection.Insert(serverContact);
+                        }
                     }
                 }
             }
-
             #endregion
 
-            return true;
+            Console.WriteLine("Step 3");
+        }
+
+        public async Task PerformSyncOperations()
+        {
+            var ops = GetRows<SyncOperation>();
+            var tasks = new List<Task<int>>();
+
+            foreach (var op in ops)
+            {
+                switch (op.Verb)
+                {
+                    case "Post":
+                        var t = StringToType(op.ResourceEndpoint);
+//                        var record = 
+//                        tasks.Add(SyncHelper.PostAsync(op.ResourceEndpoint));
+                        break;
+                    case "Put":
+                        break;
+                    case "Delete":
+                        break;
+                    default:
+                        throw new Exception(String.Format("Wrong verb for operation: {0}. Phase: PostPutDelete.", op.Verb));
+                }
+            }
+        }
+
+        public async Task Sync()
+        {
+            Console.WriteLine("Step 0");
+            await GetServerRecordsAsync();
+            Console.WriteLine("Step 4");
+            await PerformSyncOperations();
         }
     }
 }

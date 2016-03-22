@@ -14,9 +14,7 @@ namespace GraphyClient
 //            t.Wait();
 //            DoWork();
 
-            var db = new DatabaseManager("2", 4);
-//            db.DeleteContactAndRelatedInfoAndSyncOps()
-
+            var db1 = new DatabaseManager("a", 4);
         }
 
         public static void DoWork()
