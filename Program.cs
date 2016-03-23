@@ -15,7 +15,7 @@ namespace GraphyClient
 //            DoWork();
 
             var db1 = new DatabaseManager("b");
-            db1.DbConnection.Delete<Contact>(new Guid("7bf8a7a2-f01d-41b2-875b-de6c05a1eb89"));
+            db1.DbConnection.Update(new Contact{ Id = new Guid("b62c41a1-9108-4a97-a2fd-0c380edade5b"), FirstName = "b_Contact_1_new" });
         }
 
         public static void DoWork()

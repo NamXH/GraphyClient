@@ -3,7 +3,7 @@ using SQLite;
 
 namespace GraphyClient
 {
-    public class SyncOperation
+    public class SyncOperation : IIdContainer
     {
         [PrimaryKey]
         public Guid Id { get; set; }

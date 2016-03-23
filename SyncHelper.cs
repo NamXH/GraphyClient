@@ -31,7 +31,8 @@ namespace GraphyClient
         }
 
         // Hijack operationId in the params to make it easier when delete ops
-        public static async Task<Tuple<int, string, Guid>> PostAsync(string resourceEndpoint, object data, Guid operationId)
+        /// <returns>Tuple of: status code, return content string, http verb, associated sync op.</returns>
+        public static async Task<Tuple<int, string, string, SyncOperation>> PostAsync(string resourceEndpoint, object data, SyncOperation operation)
         {
             var uri = String.Format("{0}{1}/", ServerConstants.ApiRoot, resourceEndpoint);
 
@@ -42,18 +43,22 @@ namespace GraphyClient
             {
                 var response = await client.PostAsync(uri, body);
 
-                return new Tuple<int, string, Guid>((int)response.StatusCode, "Post", operationId);
-
-//                if (response.IsSuccessStatusCode)
-//                {
-                // To be careful we can check the json result. However, it will be slower.
-//                    var contentString = response.Content.ReadAsStringAsync().Result;
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
 //                    var result = JsonConvert.DeserializeObject<T>(contentString);
-//                }
+
+                    return new Tuple<int, string, string, SyncOperation>((int)response.StatusCode, content, "Post", operation);
+                }
+                else
+                {
+                    return new Tuple<int, string, string, SyncOperation>((int)response.StatusCode, null, "Post", operation); 
+                }
             }
         }
 
-        public static async Task<Tuple<int, string, Guid>> PutAsync(string resourceEndpoint, string resourceId, object data, Guid operationId)
+        /// <returns>Tuple of: status code, return content string, http verb, associated sync op.</returns>
+        public static async Task<Tuple<int, string, string, SyncOperation>> PutAsync(string resourceEndpoint, string resourceId, object data, SyncOperation operation)
         {
             var uri = String.Format("{0}{1}/{2}/", ServerConstants.ApiRoot, resourceEndpoint, resourceId);
 
@@ -64,11 +69,21 @@ namespace GraphyClient
             {
                 var response = await client.PutAsync(uri, body);
 
-                return new Tuple<int, string, Guid>((int)response.StatusCode, "Put", operationId);
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+
+                    return new Tuple<int, string, string, SyncOperation>((int)response.StatusCode, content, "Put", operation);
+                }
+                else
+                {
+                    return new Tuple<int, string, string, SyncOperation>((int)response.StatusCode, null, "Put", operation); 
+                }
             } 
         }
 
-        public static async Task<Tuple<int, string, Guid>> DeleteAsync(string resourceEndpoint, string resourceId, DateTime objectLastModified, Guid operationId)
+        /// <returns>Tuple of: status code, return content string, http verb, associated sync op.</returns>
+        public static async Task<Tuple<int, string, string, SyncOperation>> DeleteAsync(string resourceEndpoint, string resourceId, DateTime objectLastModified, SyncOperation operation)
         {
             var uri = String.Format("{0}{1}/{2}/", ServerConstants.ApiRoot, resourceEndpoint, resourceId);
 
@@ -78,7 +93,7 @@ namespace GraphyClient
 
                 var response = await client.DeleteAsync(uri);
 
-                return new Tuple<int, string, Guid>((int)response.StatusCode, "Delete", operationId);
+                return new Tuple<int, string, string, SyncOperation>((int)response.StatusCode, null, "Delete", operation); // Always returns null string as a hack so all 3 functions Post, Put, Delete has the same signature
             } 
         }
     }

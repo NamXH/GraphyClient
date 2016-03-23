@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace GraphyClient
 {
@@ -709,8 +710,91 @@ namespace GraphyClient
             DbConnection.Delete<Contact>(contactId);
         }
 
-        #endregion
+        public void DeleteResource(string resourceEndpoint, Guid resourceId)
+        {
+            switch (resourceEndpoint)
+            {
+                case "contacts":
+                    DbConnection.Delete<Contact>(resourceId);
+                    break;
+                case "phone_numbers":
+                    DbConnection.Delete<PhoneNumber>(resourceId);
+                    break;
+                case "emails":
+                    DbConnection.Delete<Email>(resourceId);
+                    break;
+                case "tags":
+                    DbConnection.Delete<Tag>(resourceId);
+                    break;
+                case "contact_tag_maps":
+                    DbConnection.Delete<ContactTagMap>(resourceId);
+                    break;
+                case "relationship_types":
+                    DbConnection.Delete<RelationshipType>(resourceId);
+                    break;
+                case "relationships":
+                    DbConnection.Delete<Relationship>(resourceId);
+                    break;
+                default:
+                    throw new Exception(String.Format("Unknown resource endpoint {0} ", resourceEndpoint));
+                    break; 
+            }
+        }
 
+        /// <returns>Tuple: The deserialized record object, IsDeleted property of the object.</returns>
+        public Tuple<object, bool> DeserializeServerRecord(string jsonString, string resourceEndpoint)
+        {
+            switch (resourceEndpoint)
+            {
+                case "contacts":
+                    {
+                        var record = JsonConvert.DeserializeObject<Contact>(jsonString);
+                        return new Tuple<object, bool>(record, record.IsDeleted);
+                    }
+                    break;
+                case "phone_numbers":
+                    {
+                        var record = JsonConvert.DeserializeObject<PhoneNumber>(jsonString);
+                        return new Tuple<object, bool>(record, record.IsDeleted);
+                    }
+                    break;
+                case "emails":
+                    {
+                        var record = JsonConvert.DeserializeObject<Email>(jsonString);
+                        return new Tuple<object, bool>(record, record.IsDeleted);
+                    }
+                    break;
+                case "tags":
+                    {
+                        var record = JsonConvert.DeserializeObject<Tag>(jsonString);
+                        return new Tuple<object, bool>(record, record.IsDeleted);
+                    }
+                    break;
+                case "contact_tag_maps":
+                    {
+                        var record = JsonConvert.DeserializeObject<ContactTagMap>(jsonString);
+                        return new Tuple<object, bool>(record, record.IsDeleted);
+                    }
+                    break;
+                case "relationship_types":
+                    {
+                        var record = JsonConvert.DeserializeObject<RelationshipType>(jsonString);
+                        return new Tuple<object, bool>(record, record.IsDeleted);
+                    }
+                    break;
+                case "relationships":
+                    {
+                        var record = JsonConvert.DeserializeObject<Relationship>(jsonString);
+                        return new Tuple<object, bool>(record, record.IsDeleted);
+                    }
+                    break;
+                default:
+                    throw new Exception(String.Format("Unknown resource endpoint {0} ", resourceEndpoint));
+                    break; 
+            } 
+        }
+
+        #endregion
 
         public async Task GetServerRecordsAsync()
         {
@@ -808,7 +892,7 @@ namespace GraphyClient
             var ops = GetRows<SyncOperation>();
 
             // Create list of tasks for all ops
-            var tasks = new List<Task<Tuple<int, string, Guid>>>();
+            var tasks = new List<Task<Tuple<int, string, string, SyncOperation>>>();
             foreach (var op in ops)
             {
                 object data;
@@ -857,48 +941,95 @@ namespace GraphyClient
                 switch (op.Verb)
                 {
                     case "Post":
-                        tasks.Add(SyncHelper.PostAsync(op.ResourceEndpoint, data, op.Id));
+                        tasks.Add(SyncHelper.PostAsync(op.ResourceEndpoint, data, op));
                         break;
                     case "Put":
-                        tasks.Add(SyncHelper.PutAsync(op.ResourceEndpoint, op.ResourceId.ToString(), data, op.Id));
+                        tasks.Add(SyncHelper.PutAsync(op.ResourceEndpoint, op.ResourceId.ToString(), data, op));
                         break;
                     case "Delete":
-                        tasks.Add(SyncHelper.DeleteAsync(op.ResourceEndpoint, op.ResourceId.ToString(), lastModified, op.Id));
+                        tasks.Add(SyncHelper.DeleteAsync(op.ResourceEndpoint, op.ResourceId.ToString(), lastModified, op));
                         break;
                     default:
                         throw new Exception(String.Format("Wrong verb for operation: {0}. Phase: PostPutDelete.", op.Verb));
                 }
             }
 
+            // Process responses from server
             foreach (var result in await Task.WhenAll(tasks))
             {
                 switch (result.Item2)
                 {
+                ////
                     case "Post":
                         if (result.Item1 == 201)
                         {
-                            DbConnection.Delete<SyncOperation>(result.Item3);
+                            DbConnection.Delete<SyncOperation>(result.Item4.Id);
                         }
                         else
                         {
                             Console.WriteLine(String.Format("{0} return unhandled status code {1}, operation {2}", result.Item1, result.Item2, result.Item3));
                         }
                         break;
+
+                ////
                     case "Put":
                         switch (result.Item1)
                         {
                             case 410:
+                                DeleteResource(result.Item4.ResourceEndpoint, result.Item4.Id);
                                 break;
                             case 409:
+                                var tmp = DeserializeServerRecord(result.Item2, result.Item4.ResourceEndpoint);
+                                var record = tmp.Item1;
+                                var serverRecordIsDeleted = tmp.Item2;
+                                if (serverRecordIsDeleted)
+                                {
+                                    DbConnection.Delete(record);
+                                }
+                                else
+                                {
+                                    DbConnection.Update(record);
+                                }
                                 break;
                             case 204:
+                                // do nothing
                                 break;
                             default:
                                 Console.WriteLine(String.Format("{0} return unhandled status code {1}, operation {2}", result.Item1, result.Item2, result.Item3)); 
+                                break;
                         }
+
+                        DbConnection.Delete<SyncOperation>(result.Item4.Id);
                         break;
+                    
+                ////
                     case "Delete":
+                        switch (result.Item1)
+                        {
+                            case 410:
+                                // do nothing
+                                break;
+                            case 409:
+                                var tmp = DeserializeServerRecord(result.Item2, result.Item4.ResourceEndpoint);
+                                var record = tmp.Item1;
+                                var serverRecordIsDeleted = tmp.Item2;
+                                if (!serverRecordIsDeleted)
+                                {
+                                    DbConnection.Insert(record);
+                                }
+                                break;
+                            case 204:
+                                // do nothing
+                                break;
+                            default:
+                                Console.WriteLine(String.Format("{0} return unhandled status code {1}, operation {2}", result.Item1, result.Item2, result.Item3)); 
+                                break;
+                        }
+
+                        DbConnection.Delete<SyncOperation>(result.Item4.Id); 
                         break;
+
+                ////
                     default:
                         throw new Exception(String.Format("Unknown returned verb: {0}.", result.Item2));
                 }
