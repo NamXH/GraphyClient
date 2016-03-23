@@ -967,7 +967,7 @@ namespace GraphyClient
                         }
                         else
                         {
-                            Console.WriteLine(String.Format("{0} return unhandled status code {1}, operation {2}", result.Item1, result.Item2, result.Item3));
+                            Console.WriteLine(String.Format("{0} request return unhandled status code {1} and content: {2}, operation: {3}, on resource: {4}", result.Item3, result.Item1, result.Item2, result.Item4.Id.ToString(), result.Item4.ResourceEndpoint));
                         }
                         break;
 
@@ -995,7 +995,7 @@ namespace GraphyClient
                                 // do nothing
                                 break;
                             default:
-                                Console.WriteLine(String.Format("{0} return unhandled status code {1}, operation {2}", result.Item1, result.Item2, result.Item3)); 
+                                Console.WriteLine(String.Format("{0} request return unhandled status code {1} and content: {2}, operation: {3}, on resource: {4}", result.Item3, result.Item1, result.Item2, result.Item4.Id.ToString(), result.Item4.ResourceEndpoint));
                                 break;
                         }
 
@@ -1022,7 +1022,7 @@ namespace GraphyClient
                                 // do nothing
                                 break;
                             default:
-                                Console.WriteLine(String.Format("{0} return unhandled status code {1}, operation {2}", result.Item1, result.Item2, result.Item3)); 
+                                Console.WriteLine(String.Format("{0} request return unhandled status code {1} and content: {2}, operation: {3}, on resource: {4}", result.Item3, result.Item1, result.Item2, result.Item4.Id.ToString(), result.Item4.ResourceEndpoint));
                                 break;
                         }
 
