@@ -957,7 +957,7 @@ namespace GraphyClient
             // Process responses from server
             foreach (var result in await Task.WhenAll(tasks))
             {
-                switch (result.Item2)
+                switch (result.Item3)
                 {
                 ////
                     case "Post":
@@ -1031,7 +1031,7 @@ namespace GraphyClient
 
                 ////
                     default:
-                        throw new Exception(String.Format("Unknown returned verb: {0}.", result.Item2));
+                        throw new Exception(String.Format("Unknown returned verb: {0}.", result.Item3));
                 }
             }
         }
