@@ -14,7 +14,7 @@ namespace GraphyClient
 //            t.Wait();
 //            DoWork();
 
-            var db1 = new DatabaseManager("a", 4);
+            var db1 = new DatabaseManager("b", 4);
         }
 
         public static void DoWork()
