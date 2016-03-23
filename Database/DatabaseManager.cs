@@ -504,39 +504,39 @@ namespace GraphyClient
             var phoneNumbers = GetRowsRelatedToContact<PhoneNumber>(contactId);
             foreach (var element in phoneNumbers)
             {
-                DbConnection.Delete(element.Id);
+                DbConnection.Delete<PhoneNumber>(element.Id);
             }
             var emails = GetRowsRelatedToContact<Email>(contactId);
             foreach (var element in emails)
             {
-                DbConnection.Delete(element.Id);
+                DbConnection.Delete<Email>(element.Id);
             }
 //            var addresses = GetRowsRelatedToContact<Address>(contactId);
 //            foreach (var element in addresses)
 //            {
-//                DbConnection.Delete(element.Id);
+//                DbConnection.Delete<>(element.Id);
 //            }
 //            var urls = GetRowsRelatedToContact<Url>(contactId);
 //            foreach (var element in urls)
 //            {
-//                DbConnection.Delete(element.Id);
+//                DbConnection.Delete<>(element.Id);
 //            }
 //            var dates = GetRowsRelatedToContact<SpecialDate>(contactId);
 //            foreach (var element in dates)
 //            {
-//                DbConnection.Delete(element.Id);
+//                DbConnection.Delete<>(element.Id);
 //            }
 //            var ims = GetRowsRelatedToContact<InstantMessage>(contactId);
 //            foreach (var element in ims)
 //            {
-//                DbConnection.Delete(element.Id);
+//                DbConnection.Delete<>(element.Id);
 //            }
 
             // Delete contact-tag map, not delete tag even if it is only appear in this contact
             var contactTagMaps = GetRowsRelatedToContact<ContactTagMap>(contactId);
             foreach (var map in contactTagMaps)
             {
-                DbConnection.Delete(map.Id);
+                DbConnection.Delete<ContactTagMap>(map.Id);
             }
 
             // Delete relationship, not delete relationship type
@@ -544,11 +544,11 @@ namespace GraphyClient
             var toRelationships = GetRelationshipsToContact(contactId);
             foreach (var relationship in fromRelationships)
             {
-                DbConnection.Delete(relationship.Id);
+                DbConnection.Delete<Relationship>(relationship.Id);
             }
             foreach (var relationship in toRelationships)
             {
-                DbConnection.Delete(relationship.Id);
+                DbConnection.Delete<Relationship>(relationship.Id);
             }
 
             // Delete contact
@@ -558,6 +558,7 @@ namespace GraphyClient
         #endregion
 
         #region New Utility Methods
+
         /// <summary>
         /// Get a row according to its primary key
         /// </summary>
@@ -601,7 +602,7 @@ namespace GraphyClient
             var syncOp = GetSyncOperationByResourceId(resourceId);
             if (syncOp != null)
             {
-                return DbConnection.Delete(syncOp.Id);
+                return DbConnection.Delete<SyncOperation>(syncOp.Id);
             }
             else
             {
@@ -649,36 +650,36 @@ namespace GraphyClient
             foreach (var element in phoneNumbers)
             {
                 DeleteSyncOperationByResourceId(element.Id);
-                DbConnection.Delete(element.Id);
+                DbConnection.Delete<PhoneNumber>(element.Id);
             }
 
             var emails = GetRowsRelatedToContact<Email>(contactId);
             foreach (var element in emails)
             {
                 DeleteSyncOperationByResourceId(element.Id);
-                DbConnection.Delete(element.Id);
+                DbConnection.Delete<Email>(element.Id);
             }
 
 //            var addresses = GetRowsRelatedToContact<Address>(contactId);
 //            foreach (var element in addresses)
 //            {
-//                DbConnection.Delete(element.Id);
+//                DbConnection.Delete<>(element.Id);
 //            }
 //
 //            var urls = GetRowsRelatedToContact<Url>(contactId);
 //            foreach (var element in urls)
 //            {
-//                DbConnection.Delete(element.Id);
+//                DbConnection.Delete<>(element.Id);
 //            }
 //            var dates = GetRowsRelatedToContact<SpecialDate>(contactId);
 //            foreach (var element in dates)
 //            {
-//                DbConnection.Delete(element.Id);
+//                DbConnection.Delete<>(element.Id);
 //            }
 //            var ims = GetRowsRelatedToContact<InstantMessage>(contactId);
 //            foreach (var element in ims)
 //            {
-//                DbConnection.Delete(element.Id);
+//                DbConnection.Delete<>(element.Id);
 //            }
 
             // Delete contact-tag map, not delete tag even if it is only appear in this contact
@@ -686,7 +687,7 @@ namespace GraphyClient
             foreach (var map in contactTagMaps)
             {
                 DeleteSyncOperationByResourceId(map.Id);
-                DbConnection.Delete(map.Id);
+                DbConnection.Delete<ContactTagMap>(map.Id);
             }
 
             // Delete relationship, not delete relationship type
@@ -695,12 +696,12 @@ namespace GraphyClient
             foreach (var relationship in fromRelationships)
             {
                 DeleteSyncOperationByResourceId(relationship.Id);
-                DbConnection.Delete(relationship.Id);
+                DbConnection.Delete<Relationship>(relationship.Id);
             }
             foreach (var relationship in toRelationships)
             {
                 DeleteSyncOperationByResourceId(relationship.Id);
-                DbConnection.Delete(relationship.Id);
+                DbConnection.Delete<Relationship>(relationship.Id);
             }
 
             // Delete contact
@@ -751,7 +752,7 @@ namespace GraphyClient
                                 throw new Exception("Record not exists while there is a assocciated Put. Phase: Get.");
                             }
 
-                            DbConnection.Delete(syncOp.Id);
+                            DbConnection.Delete<SyncOperation>(syncOp.Id);
 
                             // Sync: Server record has lazy-delete=true?
                             if (serverContact.IsDeleted)
@@ -766,7 +767,7 @@ namespace GraphyClient
                         else
                         {
                             // verb == "Delete". Post cannot happen.
-                            DbConnection.Delete(syncOp.Id);
+                            DbConnection.Delete<SyncOperation>(syncOp.Id);
 
                             // Server record has lazy-delete=true?
                             if (!serverContact.IsDeleted)
@@ -876,7 +877,7 @@ namespace GraphyClient
                     case "Post":
                         if (result.Item1 == 201)
                         {
-                            DbConnection.Delete(result.Item3);
+                            DbConnection.Delete<SyncOperation>(result.Item3);
                         }
                         else
                         {
@@ -884,6 +885,17 @@ namespace GraphyClient
                         }
                         break;
                     case "Put":
+                        switch (result.Item1)
+                        {
+                            case 410:
+                                break;
+                            case 409:
+                                break;
+                            case 204:
+                                break;
+                            default:
+                                Console.WriteLine(String.Format("{0} return unhandled status code {1}, operation {2}", result.Item1, result.Item2, result.Item3)); 
+                        }
                         break;
                     case "Delete":
                         break;
