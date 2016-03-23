@@ -30,7 +30,8 @@ namespace GraphyClient
             }
         }
 
-        public static async Task<KeyValuePair<int, string>> PostAsync(string resourceEndpoint, object data)
+        // Hijack operationId in the params to make it easier when delete ops
+        public static async Task<Tuple<int, string, Guid>> PostAsync(string resourceEndpoint, object data, Guid operationId)
         {
             var uri = String.Format("{0}{1}/", ServerConstants.ApiRoot, resourceEndpoint);
 
@@ -41,7 +42,7 @@ namespace GraphyClient
             {
                 var response = await client.PostAsync(uri, body);
 
-                return new KeyValuePair<int, string>((int)response.StatusCode, "Post");
+                return new Tuple<int, string, Guid>((int)response.StatusCode, "Post", operationId);
 
 //                if (response.IsSuccessStatusCode)
 //                {
@@ -52,7 +53,7 @@ namespace GraphyClient
             }
         }
 
-        public static async Task<KeyValuePair<int, string>> PutAsync(string resourceEndpoint, string resourceId, object data)
+        public static async Task<Tuple<int, string, Guid>> PutAsync(string resourceEndpoint, string resourceId, object data, Guid operationId)
         {
             var uri = String.Format("{0}{1}/{2}/", ServerConstants.ApiRoot, resourceEndpoint, resourceId);
 
@@ -63,11 +64,11 @@ namespace GraphyClient
             {
                 var response = await client.PutAsync(uri, body);
 
-                return new KeyValuePair<int, string>((int)response.StatusCode, "Put");
+                return new Tuple<int, string, Guid>((int)response.StatusCode, "Put", operationId);
             } 
         }
 
-        public static async Task<KeyValuePair<int, string>> DeleteAsync(string resourceEndpoint, string resourceId, DateTime objectLastModified)
+        public static async Task<Tuple<int, string, Guid>> DeleteAsync(string resourceEndpoint, string resourceId, DateTime objectLastModified, Guid operationId)
         {
             var uri = String.Format("{0}{1}/{2}/", ServerConstants.ApiRoot, resourceEndpoint, resourceId);
 
@@ -77,7 +78,7 @@ namespace GraphyClient
 
                 var response = await client.DeleteAsync(uri);
 
-                return new KeyValuePair<int, string>((int)response.StatusCode, "Delete");
+                return new Tuple<int, string, Guid>((int)response.StatusCode, "Delete", operationId);
             } 
         }
     }

@@ -14,7 +14,8 @@ namespace GraphyClient
 //            t.Wait();
 //            DoWork();
 
-            var db1 = new DatabaseManager("b", 4);
+            var db1 = new DatabaseManager("b");
+            db1.DbConnection.Delete<Contact>(new Guid("7bf8a7a2-f01d-41b2-875b-de6c05a1eb89"));
         }
 
         public static void DoWork()
@@ -22,11 +23,11 @@ namespace GraphyClient
             var db1 = new DatabaseManager("1", 4);
             var contacts = db1.GetRows<Contact>();
 
-            foreach (var contact in contacts)
-            {
-                var x = SyncHelper.PostAsync("contacts", contact).Result;
-                var b = 1;
-            }
+//            foreach (var contact in contacts)
+//            {
+//                var x = SyncHelper.PostAsync("contacts", contact).Result;
+//                var b = 1;
+//            }
 
 //            var result = await SyncHelper.GetAsync<Contact>("contacts");
             var a = 1;
