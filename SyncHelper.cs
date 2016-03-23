@@ -42,18 +42,9 @@ namespace GraphyClient
             using (var client = new HttpClient())
             {
                 var response = await client.PostAsync(uri, body);
+                var content = await response.Content.ReadAsStringAsync();
 
-                if (response.IsSuccessStatusCode)
-                {
-                    var content = await response.Content.ReadAsStringAsync();
-//                    var result = JsonConvert.DeserializeObject<T>(contentString);
-
-                    return new Tuple<int, string, string, SyncOperation>((int)response.StatusCode, content, "Post", operation);
-                }
-                else
-                {
-                    return new Tuple<int, string, string, SyncOperation>((int)response.StatusCode, null, "Post", operation); 
-                }
+                return new Tuple<int, string, string, SyncOperation>((int)response.StatusCode, content, "Post", operation);
             }
         }
 
@@ -68,17 +59,9 @@ namespace GraphyClient
             using (var client = new HttpClient())
             {
                 var response = await client.PutAsync(uri, body);
+                var content = await response.Content.ReadAsStringAsync();
 
-                if (response.IsSuccessStatusCode)
-                {
-                    var content = await response.Content.ReadAsStringAsync();
-
-                    return new Tuple<int, string, string, SyncOperation>((int)response.StatusCode, content, "Put", operation);
-                }
-                else
-                {
-                    return new Tuple<int, string, string, SyncOperation>((int)response.StatusCode, null, "Put", operation); 
-                }
+                return new Tuple<int, string, string, SyncOperation>((int)response.StatusCode, content, "Put", operation);
             } 
         }
 
