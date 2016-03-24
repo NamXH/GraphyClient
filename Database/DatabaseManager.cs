@@ -910,12 +910,86 @@ namespace GraphyClient
             opsDictionary.Add("relationship_types", ops.Where(x => x.ResourceEndpoint == "relationship_types").ToList());
             opsDictionary.Add("relationships", ops.Where(x => x.ResourceEndpoint == "relationships").ToList());
 
+            // Process responses from server
+            var count1 = 1;
+            Console.WriteLine("contacts:");
+
+            StartTasks("contacts", opsDictionary["contacts"], tasks["contacts"]);
+            foreach (var result in await Task.WhenAll(tasks["contacts"]))
+            {
+                ProcessTaskResult(result);
+                Console.WriteLine(" " + count1++);
+            }
+
+            var count2 = 1;
+            Console.WriteLine("tags:");
+
+            StartTasks("tags", opsDictionary["tags"], tasks["tags"]);
+            foreach (var result in await Task.WhenAll(tasks["tags"]))
+            {
+                ProcessTaskResult(result);
+                Console.WriteLine(" " + count2++);
+            }
+
+            var count3 = 1;
+            Console.WriteLine("relationship_types:");
+
+            StartTasks("relationship_types", opsDictionary["relationship_types"], tasks["relationship_types"]);
+            foreach (var result in await Task.WhenAll(tasks["relationship_types"]))
+            {
+                ProcessTaskResult(result);
+                Console.WriteLine(" " + count3++);
+            }
+
+            var count4 = 1;
+            Console.WriteLine("contact_tag_maps:");
+
+            StartTasks("contact_tag_maps", opsDictionary["contact_tag_maps"], tasks["contact_tag_maps"]);
+            foreach (var result in await Task.WhenAll(tasks["contact_tag_maps"]))
+            {
+                ProcessTaskResult(result);
+                Console.WriteLine(" " + count4++);
+            }
+
+            var count5 = 1;
+            Console.WriteLine("relationships:");
+
+            StartTasks("relationships", opsDictionary["relationships"], tasks["relationships"]);
+            foreach (var result in await Task.WhenAll(tasks["relationships"]))
+            {
+                ProcessTaskResult(result);
+                Console.WriteLine(" " + count5++);
+            }
+
+            var count6 = 1;
+            Console.WriteLine("phone_numbers:");
+
+            StartTasks("phone_numbers", opsDictionary["phone_numbers"], tasks["phone_numbers"]);
+            foreach (var result in await Task.WhenAll(tasks["phone_numbers"]))
+            {
+                ProcessTaskResult(result);
+                Console.WriteLine(" " + count6++);
+            }
+
+            var count7 = 1;
+            Console.WriteLine("emails:");
+
+            StartTasks("emails", opsDictionary["emails"], tasks["emails"]);
+            foreach (var result in await Task.WhenAll(tasks["emails"]))
+            {
+                ProcessTaskResult(result);
+                Console.WriteLine(" " + count7++);
+            }
+        }
+
+        public void StartTasks(string resourceEndpoint, List<SyncOperation> ops, List<Task<Tuple<int, string, string, SyncOperation>>> tasks)
+        {
             foreach (var op in ops)
             {
                 object data;
                 DateTime lastModified = DateTime.MinValue;
 
-                switch (op.ResourceEndpoint) // Do this tedius because we don't want to use reflection!!
+                switch (resourceEndpoint) // Do this tedius because we don't want to use reflection!!
                 {
                     case "contacts":
                         data = GetRowFast<Contact>(op.ResourceId);
@@ -958,69 +1032,18 @@ namespace GraphyClient
                 switch (op.Verb)
                 {
                     case "Post":
-                        tasks[op.ResourceEndpoint].Add(SyncHelper.PostAsync(op.ResourceEndpoint, data, op));
+                        tasks.Add(SyncHelper.PostAsync(op.ResourceEndpoint, data, op));
                         break;
                     case "Put":
-                        tasks[op.ResourceEndpoint].Add(SyncHelper.PutAsync(op.ResourceEndpoint, op.ResourceId.ToString(), data, op));
+                        tasks.Add(SyncHelper.PutAsync(op.ResourceEndpoint, op.ResourceId.ToString(), data, op));
                         break;
                     case "Delete":
-                        tasks[op.ResourceEndpoint].Add(SyncHelper.DeleteAsync(op.ResourceEndpoint, op.ResourceId.ToString(), lastModified, op));
+                        tasks.Add(SyncHelper.DeleteAsync(op.ResourceEndpoint, op.ResourceId.ToString(), lastModified, op));
                         break;
                     default:
                         throw new Exception(String.Format("Wrong verb for operation: {0}. Phase: PostPutDelete.", op.Verb));
                 }
-            }
-
-            // Process responses from server
-            var count1 = 1;
-            Console.WriteLine("contacts:");
-            foreach (var result in await Task.WhenAll(tasks["contacts"]))
-            {
-                ProcessTaskResult(result);
-                Console.WriteLine(" " + count1++);
-            }
-            var count2 = 1;
-            Console.WriteLine("tags:");
-            foreach (var result in await Task.WhenAll(tasks["tags"]))
-            {
-                ProcessTaskResult(result);
-                Console.WriteLine(" " + count2++);
-            }
-            var count3 = 1;
-            Console.WriteLine("relationship_types:");
-            foreach (var result in await Task.WhenAll(tasks["relationship_types"]))
-            {
-                ProcessTaskResult(result);
-                Console.WriteLine(" " + count3++);
-            }
-            var count4 = 1;
-            Console.WriteLine("contact_tag_maps:");
-            foreach (var result in await Task.WhenAll(tasks["contact_tag_maps"]))
-            {
-                ProcessTaskResult(result);
-                Console.WriteLine(" " + count4++);
-            }
-            var count5 = 1;
-            Console.WriteLine("relationships:");
-            foreach (var result in await Task.WhenAll(tasks["relationships"]))
-            {
-                ProcessTaskResult(result);
-                Console.WriteLine(" " + count5++);
-            }
-            var count6 = 1;
-            Console.WriteLine("phone_numbers:");
-            foreach (var result in await Task.WhenAll(tasks["phone_numbers"]))
-            {
-                ProcessTaskResult(result);
-                Console.WriteLine(" " + count6++);
-            }
-            var count7 = 1;
-            Console.WriteLine("emails:");
-            foreach (var result in await Task.WhenAll(tasks["emails"]))
-            {
-                ProcessTaskResult(result);
-                Console.WriteLine(" " + count7++);
-            }
+            } 
         }
 
         public void ProcessTaskResult(Tuple<int, string, string, SyncOperation> result)
