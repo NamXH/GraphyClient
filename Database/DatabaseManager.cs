@@ -908,7 +908,7 @@ namespace GraphyClient
 
             #region Tag 
             {
-                var getRequestsResult = await SyncHelper.GetAsync<Tag>("contacts"); // cannot be generalize!!
+                var getRequestsResult = await SyncHelper.GetAsync<Tag>("tags"); // cannot be generalize!!
 
                 if (getRequestsResult.Key != 200)
                 {
@@ -985,7 +985,7 @@ namespace GraphyClient
 
             #region RelationshipType
             {
-                var getRequestsResult = await SyncHelper.GetAsync<RelationshipType>("contacts"); // cannot be generalize!!
+                var getRequestsResult = await SyncHelper.GetAsync<RelationshipType>("relationship_types"); // cannot be generalize!!
 
                 if (getRequestsResult.Key != 200)
                 {
@@ -1062,7 +1062,7 @@ namespace GraphyClient
 
             #region ContactTagMap 
             {
-                var getRequestsResult = await SyncHelper.GetAsync<ContactTagMap>("contacts"); // cannot be generalize!!
+                var getRequestsResult = await SyncHelper.GetAsync<ContactTagMap>("contact_tag_maps"); // cannot be generalize!!
 
                 if (getRequestsResult.Key != 200)
                 {
@@ -1139,7 +1139,7 @@ namespace GraphyClient
 
             #region Relationship
             {
-                var getRequestsResult = await SyncHelper.GetAsync<Relationship>("contacts"); // cannot be generalize!!
+                var getRequestsResult = await SyncHelper.GetAsync<Relationship>("relationships"); // cannot be generalize!!
 
                 if (getRequestsResult.Key != 200)
                 {
@@ -1216,7 +1216,7 @@ namespace GraphyClient
 
             #region PhoneNumber
             {
-                var getRequestsResult = await SyncHelper.GetAsync<PhoneNumber>("contacts"); // cannot be generalize!!
+                var getRequestsResult = await SyncHelper.GetAsync<PhoneNumber>("phone_numbers"); // cannot be generalize!!
 
                 if (getRequestsResult.Key != 200)
                 {
@@ -1293,7 +1293,7 @@ namespace GraphyClient
 
             #region Email
             {
-                var getRequestsResult = await SyncHelper.GetAsync<Email>("contacts"); // cannot be generalize!!
+                var getRequestsResult = await SyncHelper.GetAsync<Email>("emails"); // cannot be generalize!!
 
                 if (getRequestsResult.Key != 200)
                 {

@@ -29,8 +29,10 @@ namespace GraphyClient
 
         public static async Task DoWork()
         {
-            var db1 = new DatabaseManager("x", 8);
-            await db1.Sync();
+//            var db1 = new DatabaseManager("x", 8);
+//            await db1.Sync();
+            var db2 = new DatabaseManager("y", 0);
+            await db2.Sync();
         }
     }
 }
