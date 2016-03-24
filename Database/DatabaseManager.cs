@@ -710,6 +710,35 @@ namespace GraphyClient
             DbConnection.Delete<Contact>(contactId);
         }
 
+        public void DeleteTagAndRelatedInfoAndSyncOps(Guid tagId)
+        {
+            // Delete contact-tag map
+            var contactTagMaps = DbConnection.Table<ContactTagMap>().Where(x => x.TagId == tagId);
+            foreach (var map in contactTagMaps)
+            {
+                DeleteSyncOperationByResourceId(map.Id);
+                DbConnection.Delete<ContactTagMap>(map.Id);
+            } 
+
+            // Delete tag 
+            DeleteSyncOperationByResourceId(tagId);
+            DbConnection.Delete<Tag>(tagId);
+        }
+
+        public void DeleteRelationshipTypeAndRelatedInfoAndSyncOps(Guid relationshipTypeId)
+        {
+            var relationships = DbConnection.Table<Relationship>().Where(x => x.RelationshipTypeId == relationshipTypeId);
+            foreach (var relationship in relationships)
+            {
+                DeleteSyncOperationByResourceId(relationship.Id);
+                DbConnection.Delete<Relationship>(relationship.Id);
+            } 
+
+            // Delete relationshipType 
+            DeleteSyncOperationByResourceId(relationshipTypeId);
+            DbConnection.Delete<RelationshipType>(relationshipTypeId);
+        }
+
         public void DeleteResource(string resourceEndpoint, Guid resourceId)
         {
             switch (resourceEndpoint)
@@ -798,93 +827,546 @@ namespace GraphyClient
 
         public async Task GetServerRecordsAsync()
         {
-            #region Contacts
-            Console.WriteLine("Step 1");
-            var getRequestsResult = await SyncHelper.GetAsync<Contact>("contacts");
-            Console.WriteLine("Step 2");
+            // We don't want to use reflection!!
 
-            if (getRequestsResult.Key != 200)
+            #region Contact
             {
-                throw new Exception(String.Format("Get request fail with code: {0}. Phase: Get.", getRequestsResult.Key));
-            }
+                var getRequestsResult = await SyncHelper.GetAsync<Contact>("contacts"); // cannot be generalize!!
 
-            foreach (var serverContact in getRequestsResult.Value)
-            {
-//                var clientContact = GetRow<Contact>(serverContact.Id); // Old style, can be slower
-                Contact clientContact = null;
-                try
+                if (getRequestsResult.Key != 200)
                 {
-                    clientContact = DbConnection.Get<Contact>(serverContact.Id);
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e.Message); // clientContact will be null if exception occur.
+                    throw new Exception(String.Format("Get request fail with code: {0}. Phase: Get.", getRequestsResult.Key));
                 }
 
-                // Server record has last-modified > client record last-modified (same ID) or client doesn't have that record?
-                if ((clientContact == null) || (clientContact.LastModified < serverContact.LastModified))
+                foreach (var serverRecord in getRequestsResult.Value)
                 {
-                    var syncOp = GetSyncOperationByResourceId(serverContact.Id);
+                    var clientRecord = GetRowFast<Contact>(serverRecord.Id); // cannot be generalize!!
 
-                    // Sync Queue has an operation of that record (same ID): means there's un-synced modification on client?
-                    if (syncOp != null)
+                    // Server record has last-modified > client record last-modified (same ID) or client doesn't have that record?
+                    if ((clientRecord == null) || (clientRecord.LastModified < serverRecord.LastModified))
                     {
-                        if (syncOp.Verb == "Put")
+                        var syncOp = GetSyncOperationByResourceId(serverRecord.Id);
+
+                        // Sync: Sync Queue has an operation of that record (same ID): means there's un-synced modification on client?
+                        if (syncOp != null)
                         {
-                            if (clientContact == null)
+                            if (syncOp.Verb == "Put")
                             {
-                                throw new Exception("Record not exists while there is a assocciated Put. Phase: Get.");
-                            }
+                                if (clientRecord == null)
+                                {
+                                    throw new Exception("Record not exists while there is a assocciated Put. Phase: Get.");
+                                }
 
-                            DbConnection.Delete<SyncOperation>(syncOp.Id);
+                                DbConnection.Delete<SyncOperation>(syncOp.Id);
 
-                            // Sync: Server record has lazy-delete=true?
-                            if (serverContact.IsDeleted)
-                            {
-                                DeleteContactAndRelatedInfoAndSyncOps(clientContact.Id);
+                                // Sync: Server record has lazy-delete=true?
+                                if (serverRecord.IsDeleted)
+                                {
+                                    DeleteContactAndRelatedInfoAndSyncOps(clientRecord.Id); // cannot be generalize!!
+                                }
+                                else
+                                {
+                                    DbConnection.Update(serverRecord);
+                                }
                             }
                             else
                             {
-                                DbConnection.Update(serverContact);
+                                // verb == "Delete". Post cannot happen.
+                                DbConnection.Delete<SyncOperation>(syncOp.Id);
+
+                                // Sync: Server record has lazy-delete=true?
+                                if (!serverRecord.IsDeleted)
+                                {
+                                    DbConnection.Insert(serverRecord);
+                                }
                             }
                         }
                         else
                         {
-                            // verb == "Delete". Post cannot happen.
-                            DbConnection.Delete<SyncOperation>(syncOp.Id);
-
-                            // Server record has lazy-delete=true?
-                            if (!serverContact.IsDeleted)
+                            // Sync: Client has the record (Record has an ID which client also have)?
+                            if (clientRecord != null)
                             {
-                                DbConnection.Insert(serverContact);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // Client has the record (Record has an ID which client also have)?
-                        if (clientContact != null)
-                        {
-                            // Server record has lazy-delete=true?
-                            if (serverContact.IsDeleted)
-                            {
-                                DeleteContactAndRelatedInfoAndSyncOps(clientContact.Id);
+                                // Sync: Server record has lazy-delete=true?
+                                if (serverRecord.IsDeleted)
+                                {
+                                    DeleteContactAndRelatedInfoAndSyncOps(clientRecord.Id); // cannot be generalize!!
+                                }
+                                else
+                                {
+                                    DbConnection.Update(serverRecord);
+                                }
                             }
                             else
                             {
-                                DbConnection.Update(serverContact);
+                                DbConnection.Insert(serverRecord);
                             }
-                        }
-                        else
-                        {
-                            DbConnection.Insert(serverContact);
                         }
                     }
                 }
             }
             #endregion
 
-            Console.WriteLine("Step 3");
+            #region Tag 
+            {
+                var getRequestsResult = await SyncHelper.GetAsync<Tag>("contacts"); // cannot be generalize!!
+
+                if (getRequestsResult.Key != 200)
+                {
+                    throw new Exception(String.Format("Get request fail with code: {0}. Phase: Get.", getRequestsResult.Key));
+                }
+
+                foreach (var serverRecord in getRequestsResult.Value)
+                {
+                    var clientRecord = GetRowFast<Tag>(serverRecord.Id); // cannot be generalize!!
+
+                    // Server record has last-modified > client record last-modified (same ID) or client doesn't have that record?
+                    if ((clientRecord == null) || (clientRecord.LastModified < serverRecord.LastModified))
+                    {
+                        var syncOp = GetSyncOperationByResourceId(serverRecord.Id);
+
+                        // Sync: Sync Queue has an operation of that record (same ID): means there's un-synced modification on client?
+                        if (syncOp != null)
+                        {
+                            if (syncOp.Verb == "Put")
+                            {
+                                if (clientRecord == null)
+                                {
+                                    throw new Exception("Record not exists while there is a assocciated Put. Phase: Get.");
+                                }
+
+                                DbConnection.Delete<SyncOperation>(syncOp.Id);
+
+                                // Sync: Server record has lazy-delete=true?
+                                if (serverRecord.IsDeleted)
+                                {
+                                    DeleteTagAndRelatedInfoAndSyncOps(clientRecord.Id); // cannot be generalize!!
+                                }
+                                else
+                                {
+                                    DbConnection.Update(serverRecord);
+                                }
+                            }
+                            else
+                            {
+                                // verb == "Delete". Post cannot happen.
+                                DbConnection.Delete<SyncOperation>(syncOp.Id);
+
+                                // Sync: Server record has lazy-delete=true?
+                                if (!serverRecord.IsDeleted)
+                                {
+                                    DbConnection.Insert(serverRecord);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            // Sync: Client has the record (Record has an ID which client also have)?
+                            if (clientRecord != null)
+                            {
+                                // Sync: Server record has lazy-delete=true?
+                                if (serverRecord.IsDeleted)
+                                {
+                                    DeleteTagAndRelatedInfoAndSyncOps(clientRecord.Id); // cannot be generalize!!
+                                }
+                                else
+                                {
+                                    DbConnection.Update(serverRecord);
+                                }
+                            }
+                            else
+                            {
+                                DbConnection.Insert(serverRecord);
+                            }
+                        }
+                    }
+                }
+            }
+            #endregion
+
+            #region RelationshipType
+            {
+                var getRequestsResult = await SyncHelper.GetAsync<RelationshipType>("contacts"); // cannot be generalize!!
+
+                if (getRequestsResult.Key != 200)
+                {
+                    throw new Exception(String.Format("Get request fail with code: {0}. Phase: Get.", getRequestsResult.Key));
+                }
+
+                foreach (var serverRecord in getRequestsResult.Value)
+                {
+                    var clientRecord = GetRowFast<RelationshipType>(serverRecord.Id); // cannot be generalize!!
+
+                    // Server record has last-modified > client record last-modified (same ID) or client doesn't have that record?
+                    if ((clientRecord == null) || (clientRecord.LastModified < serverRecord.LastModified))
+                    {
+                        var syncOp = GetSyncOperationByResourceId(serverRecord.Id);
+
+                        // Sync: Sync Queue has an operation of that record (same ID): means there's un-synced modification on client?
+                        if (syncOp != null)
+                        {
+                            if (syncOp.Verb == "Put")
+                            {
+                                if (clientRecord == null)
+                                {
+                                    throw new Exception("Record not exists while there is a assocciated Put. Phase: Get.");
+                                }
+
+                                DbConnection.Delete<SyncOperation>(syncOp.Id);
+
+                                // Sync: Server record has lazy-delete=true?
+                                if (serverRecord.IsDeleted)
+                                {
+                                    DeleteRelationshipTypeAndRelatedInfoAndSyncOps(clientRecord.Id); // cannot be generalize!!
+                                }
+                                else
+                                {
+                                    DbConnection.Update(serverRecord);
+                                }
+                            }
+                            else
+                            {
+                                // verb == "Delete". Post cannot happen.
+                                DbConnection.Delete<SyncOperation>(syncOp.Id);
+
+                                // Sync: Server record has lazy-delete=true?
+                                if (!serverRecord.IsDeleted)
+                                {
+                                    DbConnection.Insert(serverRecord);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            // Sync: Client has the record (Record has an ID which client also have)?
+                            if (clientRecord != null)
+                            {
+                                // Sync: Server record has lazy-delete=true?
+                                if (serverRecord.IsDeleted)
+                                {
+                                    DeleteRelationshipTypeAndRelatedInfoAndSyncOps(clientRecord.Id); // cannot be generalize!!
+                                }
+                                else
+                                {
+                                    DbConnection.Update(serverRecord);
+                                }
+                            }
+                            else
+                            {
+                                DbConnection.Insert(serverRecord);
+                            }
+                        }
+                    }
+                }
+            }
+            #endregion
+
+            #region ContactTagMap 
+            {
+                var getRequestsResult = await SyncHelper.GetAsync<ContactTagMap>("contacts"); // cannot be generalize!!
+
+                if (getRequestsResult.Key != 200)
+                {
+                    throw new Exception(String.Format("Get request fail with code: {0}. Phase: Get.", getRequestsResult.Key));
+                }
+
+                foreach (var serverRecord in getRequestsResult.Value)
+                {
+                    var clientRecord = GetRowFast<ContactTagMap>(serverRecord.Id); // cannot be generalize!!
+
+                    // Server record has last-modified > client record last-modified (same ID) or client doesn't have that record?
+                    if ((clientRecord == null) || (clientRecord.LastModified < serverRecord.LastModified))
+                    {
+                        var syncOp = GetSyncOperationByResourceId(serverRecord.Id);
+
+                        // Sync: Sync Queue has an operation of that record (same ID): means there's un-synced modification on client?
+                        if (syncOp != null)
+                        {
+                            if (syncOp.Verb == "Put")
+                            {
+                                if (clientRecord == null)
+                                {
+                                    throw new Exception("Record not exists while there is a assocciated Put. Phase: Get.");
+                                }
+
+                                DbConnection.Delete<SyncOperation>(syncOp.Id);
+
+                                // Sync: Server record has lazy-delete=true?
+                                if (serverRecord.IsDeleted)
+                                {
+                                    DbConnection.Delete<ContactTagMap>(clientRecord.Id);  // cannot be generalize!!
+                                }
+                                else
+                                {
+                                    DbConnection.Update(serverRecord);
+                                }
+                            }
+                            else
+                            {
+                                // verb == "Delete". Post cannot happen.
+                                DbConnection.Delete<SyncOperation>(syncOp.Id);
+
+                                // Sync: Server record has lazy-delete=true?
+                                if (!serverRecord.IsDeleted)
+                                {
+                                    DbConnection.Insert(serverRecord);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            // Sync: Client has the record (Record has an ID which client also have)?
+                            if (clientRecord != null)
+                            {
+                                // Sync: Server record has lazy-delete=true?
+                                if (serverRecord.IsDeleted)
+                                {
+                                    DbConnection.Delete<ContactTagMap>(clientRecord.Id); // cannot be generalize!!
+                                }
+                                else
+                                {
+                                    DbConnection.Update(serverRecord);
+                                }
+                            }
+                            else
+                            {
+                                DbConnection.Insert(serverRecord);
+                            }
+                        }
+                    }
+                }
+            }
+            #endregion
+
+            #region Relationship
+            {
+                var getRequestsResult = await SyncHelper.GetAsync<Relationship>("contacts"); // cannot be generalize!!
+
+                if (getRequestsResult.Key != 200)
+                {
+                    throw new Exception(String.Format("Get request fail with code: {0}. Phase: Get.", getRequestsResult.Key));
+                }
+
+                foreach (var serverRecord in getRequestsResult.Value)
+                {
+                    var clientRecord = GetRowFast<Relationship>(serverRecord.Id); // cannot be generalize!!
+
+                    // Server record has last-modified > client record last-modified (same ID) or client doesn't have that record?
+                    if ((clientRecord == null) || (clientRecord.LastModified < serverRecord.LastModified))
+                    {
+                        var syncOp = GetSyncOperationByResourceId(serverRecord.Id);
+
+                        // Sync: Sync Queue has an operation of that record (same ID): means there's un-synced modification on client?
+                        if (syncOp != null)
+                        {
+                            if (syncOp.Verb == "Put")
+                            {
+                                if (clientRecord == null)
+                                {
+                                    throw new Exception("Record not exists while there is a assocciated Put. Phase: Get.");
+                                }
+
+                                DbConnection.Delete<SyncOperation>(syncOp.Id);
+
+                                // Sync: Server record has lazy-delete=true?
+                                if (serverRecord.IsDeleted)
+                                {
+                                    DbConnection.Delete<Relationship>(clientRecord.Id);  // cannot be generalize!!
+                                }
+                                else
+                                {
+                                    DbConnection.Update(serverRecord);
+                                }
+                            }
+                            else
+                            {
+                                // verb == "Delete". Post cannot happen.
+                                DbConnection.Delete<SyncOperation>(syncOp.Id);
+
+                                // Sync: Server record has lazy-delete=true?
+                                if (!serverRecord.IsDeleted)
+                                {
+                                    DbConnection.Insert(serverRecord);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            // Sync: Client has the record (Record has an ID which client also have)?
+                            if (clientRecord != null)
+                            {
+                                // Sync: Server record has lazy-delete=true?
+                                if (serverRecord.IsDeleted)
+                                {
+                                    DbConnection.Delete<Relationship>(clientRecord.Id); // cannot be generalize!!
+                                }
+                                else
+                                {
+                                    DbConnection.Update(serverRecord);
+                                }
+                            }
+                            else
+                            {
+                                DbConnection.Insert(serverRecord);
+                            }
+                        }
+                    }
+                }
+            }
+            #endregion
+
+            #region PhoneNumber
+            {
+                var getRequestsResult = await SyncHelper.GetAsync<PhoneNumber>("contacts"); // cannot be generalize!!
+
+                if (getRequestsResult.Key != 200)
+                {
+                    throw new Exception(String.Format("Get request fail with code: {0}. Phase: Get.", getRequestsResult.Key));
+                }
+
+                foreach (var serverRecord in getRequestsResult.Value)
+                {
+                    var clientRecord = GetRowFast<PhoneNumber>(serverRecord.Id); // cannot be generalize!!
+
+                    // Server record has last-modified > client record last-modified (same ID) or client doesn't have that record?
+                    if ((clientRecord == null) || (clientRecord.LastModified < serverRecord.LastModified))
+                    {
+                        var syncOp = GetSyncOperationByResourceId(serverRecord.Id);
+
+                        // Sync: Sync Queue has an operation of that record (same ID): means there's un-synced modification on client?
+                        if (syncOp != null)
+                        {
+                            if (syncOp.Verb == "Put")
+                            {
+                                if (clientRecord == null)
+                                {
+                                    throw new Exception("Record not exists while there is a assocciated Put. Phase: Get.");
+                                }
+
+                                DbConnection.Delete<SyncOperation>(syncOp.Id);
+
+                                // Sync: Server record has lazy-delete=true?
+                                if (serverRecord.IsDeleted)
+                                {
+                                    DbConnection.Delete<PhoneNumber>(clientRecord.Id);  // cannot be generalize!!
+                                }
+                                else
+                                {
+                                    DbConnection.Update(serverRecord);
+                                }
+                            }
+                            else
+                            {
+                                // verb == "Delete". Post cannot happen.
+                                DbConnection.Delete<SyncOperation>(syncOp.Id);
+
+                                // Sync: Server record has lazy-delete=true?
+                                if (!serverRecord.IsDeleted)
+                                {
+                                    DbConnection.Insert(serverRecord);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            // Sync: Client has the record (Record has an ID which client also have)?
+                            if (clientRecord != null)
+                            {
+                                // Sync: Server record has lazy-delete=true?
+                                if (serverRecord.IsDeleted)
+                                {
+                                    DbConnection.Delete<PhoneNumber>(clientRecord.Id); // cannot be generalize!!
+                                }
+                                else
+                                {
+                                    DbConnection.Update(serverRecord);
+                                }
+                            }
+                            else
+                            {
+                                DbConnection.Insert(serverRecord);
+                            }
+                        }
+                    }
+                }
+            }
+            #endregion
+
+            #region Email
+            {
+                var getRequestsResult = await SyncHelper.GetAsync<Email>("contacts"); // cannot be generalize!!
+
+                if (getRequestsResult.Key != 200)
+                {
+                    throw new Exception(String.Format("Get request fail with code: {0}. Phase: Get.", getRequestsResult.Key));
+                }
+
+                foreach (var serverRecord in getRequestsResult.Value)
+                {
+                    var clientRecord = GetRowFast<Email>(serverRecord.Id); // cannot be generalize!!
+
+                    // Server record has last-modified > client record last-modified (same ID) or client doesn't have that record?
+                    if ((clientRecord == null) || (clientRecord.LastModified < serverRecord.LastModified))
+                    {
+                        var syncOp = GetSyncOperationByResourceId(serverRecord.Id);
+
+                        // Sync: Sync Queue has an operation of that record (same ID): means there's un-synced modification on client?
+                        if (syncOp != null)
+                        {
+                            if (syncOp.Verb == "Put")
+                            {
+                                if (clientRecord == null)
+                                {
+                                    throw new Exception("Record not exists while there is a assocciated Put. Phase: Get.");
+                                }
+
+                                DbConnection.Delete<SyncOperation>(syncOp.Id);
+
+                                // Sync: Server record has lazy-delete=true?
+                                if (serverRecord.IsDeleted)
+                                {
+                                    DbConnection.Delete<Email>(clientRecord.Id);  // cannot be generalize!!
+                                }
+                                else
+                                {
+                                    DbConnection.Update(serverRecord);
+                                }
+                            }
+                            else
+                            {
+                                // verb == "Delete". Post cannot happen.
+                                DbConnection.Delete<SyncOperation>(syncOp.Id);
+
+                                // Sync: Server record has lazy-delete=true?
+                                if (!serverRecord.IsDeleted)
+                                {
+                                    DbConnection.Insert(serverRecord);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            // Sync: Client has the record (Record has an ID which client also have)?
+                            if (clientRecord != null)
+                            {
+                                // Sync: Server record has lazy-delete=true?
+                                if (serverRecord.IsDeleted)
+                                {
+                                    DbConnection.Delete<Email>(clientRecord.Id); // cannot be generalize!!
+                                }
+                                else
+                                {
+                                    DbConnection.Update(serverRecord);
+                                }
+                            }
+                            else
+                            {
+                                DbConnection.Insert(serverRecord);
+                            }
+                        }
+                    }
+                }
+            }
+            #endregion
         }
 
         public async Task PerformSyncOperations()
@@ -911,74 +1393,75 @@ namespace GraphyClient
             opsDictionary.Add("relationships", ops.Where(x => x.ResourceEndpoint == "relationships").ToList());
 
             // Process responses from server
-            var count1 = 1;
-            Console.WriteLine("contacts:");
+
+//            var count1 = 1;
+//            Console.WriteLine("contacts:");
 
             StartTasks("contacts", opsDictionary["contacts"], tasks["contacts"]);
             foreach (var result in await Task.WhenAll(tasks["contacts"]))
             {
                 ProcessTaskResult(result);
-                Console.WriteLine(" " + count1++);
+//                Console.WriteLine(" " + count1++);
             }
 
-            var count2 = 1;
-            Console.WriteLine("tags:");
+//            var count2 = 1;
+//            Console.WriteLine("tags:");
 
             StartTasks("tags", opsDictionary["tags"], tasks["tags"]);
             foreach (var result in await Task.WhenAll(tasks["tags"]))
             {
                 ProcessTaskResult(result);
-                Console.WriteLine(" " + count2++);
+//                Console.WriteLine(" " + count2++);
             }
 
-            var count3 = 1;
-            Console.WriteLine("relationship_types:");
+//            var count3 = 1;
+//            Console.WriteLine("relationship_types:");
 
             StartTasks("relationship_types", opsDictionary["relationship_types"], tasks["relationship_types"]);
             foreach (var result in await Task.WhenAll(tasks["relationship_types"]))
             {
                 ProcessTaskResult(result);
-                Console.WriteLine(" " + count3++);
+//                Console.WriteLine(" " + count3++);
             }
 
-            var count4 = 1;
-            Console.WriteLine("contact_tag_maps:");
+//            var count4 = 1;
+//            Console.WriteLine("contact_tag_maps:");
 
             StartTasks("contact_tag_maps", opsDictionary["contact_tag_maps"], tasks["contact_tag_maps"]);
             foreach (var result in await Task.WhenAll(tasks["contact_tag_maps"]))
             {
                 ProcessTaskResult(result);
-                Console.WriteLine(" " + count4++);
+//                Console.WriteLine(" " + count4++);
             }
 
-            var count5 = 1;
-            Console.WriteLine("relationships:");
+//            var count5 = 1;
+//            Console.WriteLine("relationships:");
 
             StartTasks("relationships", opsDictionary["relationships"], tasks["relationships"]);
             foreach (var result in await Task.WhenAll(tasks["relationships"]))
             {
                 ProcessTaskResult(result);
-                Console.WriteLine(" " + count5++);
+//                Console.WriteLine(" " + count5++);
             }
 
-            var count6 = 1;
-            Console.WriteLine("phone_numbers:");
+//            var count6 = 1;
+//            Console.WriteLine("phone_numbers:");
 
             StartTasks("phone_numbers", opsDictionary["phone_numbers"], tasks["phone_numbers"]);
             foreach (var result in await Task.WhenAll(tasks["phone_numbers"]))
             {
                 ProcessTaskResult(result);
-                Console.WriteLine(" " + count6++);
+//                Console.WriteLine(" " + count6++);
             }
 
-            var count7 = 1;
-            Console.WriteLine("emails:");
+//            var count7 = 1;
+//            Console.WriteLine("emails:");
 
             StartTasks("emails", opsDictionary["emails"], tasks["emails"]);
             foreach (var result in await Task.WhenAll(tasks["emails"]))
             {
                 ProcessTaskResult(result);
-                Console.WriteLine(" " + count7++);
+//                Console.WriteLine(" " + count7++);
             }
         }
 
@@ -1050,7 +1533,7 @@ namespace GraphyClient
         {
             switch (result.Item3)
             {
-                ////
+            ////
                 case "Post":
                     if (result.Item1 == 201)
                     {
@@ -1062,7 +1545,7 @@ namespace GraphyClient
                     }
                     break;
 
-                    ////
+            ////
                 case "Put":
                     switch (result.Item1)
                     {
@@ -1093,7 +1576,7 @@ namespace GraphyClient
                     DbConnection.Delete<SyncOperation>(result.Item4.Id);
                     break;
 
-                    ////
+            ////
                 case "Delete":
                     switch (result.Item1)
                     {
@@ -1120,7 +1603,7 @@ namespace GraphyClient
                     DbConnection.Delete<SyncOperation>(result.Item4.Id); 
                     break;
 
-                    ////
+            ////
                 default:
                     throw new Exception(String.Format("Unknown returned verb: {0}.", result.Item3));
             } 
@@ -1128,9 +1611,7 @@ namespace GraphyClient
 
         public async Task Sync()
         {
-            Console.WriteLine("Step 0");
             await GetServerRecordsAsync();
-            Console.WriteLine("Step 4");
             await PerformSyncOperations();
         }
     }
