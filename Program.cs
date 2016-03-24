@@ -22,7 +22,12 @@ namespace GraphyClient
 
 //            var db2 = new DatabaseManager("y", 0);
 //            await db2.Sync();
-        }
 
+            var db1 = new DatabaseManager("x");
+            db1.MakeChanges();
+            await db1.SyncDatabaseAsync();
+
+//            var getRequestsResult = await SyncHelper.GetAsync<Contact>("contacts");
+        }
     }
 }

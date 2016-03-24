@@ -366,10 +366,10 @@ namespace GraphyClient
         /// </summary>
         /// <returns>The rows.</returns>
         /// <typeparam name="T">The 1st type parameter.</typeparam>
-//        public IList<T> GetRows<T>() where T : class, new()
-//        {
-//            return DbConnection.Table<T>().ToList();
-//        }
+        //        public IList<T> GetRows<T>() where T : class, new()
+        //        {
+        //            return DbConnection.Table<T>().ToList();
+        //        }
 
         /// <summary>
         /// Get a row according to its primary key
@@ -377,51 +377,51 @@ namespace GraphyClient
         /// <returns>The row.</returns>
         /// <param name="id">Identifier.</param>
         /// <typeparam name="T">The 1st type parameter.</typeparam>
-//        public T GetRow<T>(Guid id) where T : class, IIdContainer, new()
-//        {
-//            return DbConnection.Table<T>().Where(x => x.Id == id).FirstOrDefault();
-//        }
+        //        public T GetRow<T>(Guid id) where T : class, IIdContainer, new()
+        //        {
+        //            return DbConnection.Table<T>().Where(x => x.Id == id).FirstOrDefault();
+        //        }
 
-//        public IList<T> GetRows<T>(IList<Guid> idList) where T : class, IIdContainer, new()
-//        {
-//            return DbConnection.Table<T>().Where(x => idList.Contains(x.Id)).ToList();
-//        }
+        //        public IList<T> GetRows<T>(IList<Guid> idList) where T : class, IIdContainer, new()
+        //        {
+        //            return DbConnection.Table<T>().Where(x => idList.Contains(x.Id)).ToList();
+        //        }
 
         public IList<T> GetRowsRelatedToContact<T>(Guid contactId) where T : class, IContactIdRelated, new()
         {
             return DbConnection.Table<T>().Where(x => x.ContactId == contactId).ToList();
         }
 
-//        public IList<T> GetRowsByName<T>(string name) where T : class, INameContainer, new()
-//        {
-//            if (String.IsNullOrEmpty(name))
-//            {
-//                return new List<T>();
-//            }
-//            return DbConnection.Table<T>().Where(x => x.Name == name).ToList();
-//        }
+        //        public IList<T> GetRowsByName<T>(string name) where T : class, INameContainer, new()
+        //        {
+        //            if (String.IsNullOrEmpty(name))
+        //            {
+        //                return new List<T>();
+        //            }
+        //            return DbConnection.Table<T>().Where(x => x.Name == name).ToList();
+        //        }
 
-//        public IList<T> GetRowsContainNameIgnoreCase<T>(string name) where T : class, INameContainer, new()
-//        {
-//            if (String.IsNullOrEmpty(name))
-//            {
-//                return new List<T>();
-//            }
-//
-//            //             String.Equals does not work
-//            //             return DbConnection.Table<T>().Where(x => String.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase)).ToList();
-//            // Workaround
-//            //            var result = new List<T>();
-//            //            var nameUpper = FirstLetterToUpper(name);
-//            //            var nameLower = FirstLetterToLower(name);
-//            //            result.AddRange(DbConnection.Table<T>().Where(x => x.Name == name));
-//            //            result.AddRange(DbConnection.Table<T>().Where(x => x.Name == nameUpper));
-//            //            result.AddRange(DbConnection.Table<T>().Where(x => x.Name == nameLower));
-//
-//            // For some shocking reason: String.Contains ignore case in this situation !! It is actually what we want !!
-//            // We put in tolower() to prevent bugs later on. There is a faster solution using CulturalInfo. !!
-//            return DbConnection.Table<T>().Where(x => x.Name.ToLower().Contains(name.ToLower())).ToList();
-//        }
+        //        public IList<T> GetRowsContainNameIgnoreCase<T>(string name) where T : class, INameContainer, new()
+        //        {
+        //            if (String.IsNullOrEmpty(name))
+        //            {
+        //                return new List<T>();
+        //            }
+        //
+        //            //             String.Equals does not work
+        //            //             return DbConnection.Table<T>().Where(x => String.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase)).ToList();
+        //            // Workaround
+        //            //            var result = new List<T>();
+        //            //            var nameUpper = FirstLetterToUpper(name);
+        //            //            var nameLower = FirstLetterToLower(name);
+        //            //            result.AddRange(DbConnection.Table<T>().Where(x => x.Name == name));
+        //            //            result.AddRange(DbConnection.Table<T>().Where(x => x.Name == nameUpper));
+        //            //            result.AddRange(DbConnection.Table<T>().Where(x => x.Name == nameLower));
+        //
+        //            // For some shocking reason: String.Contains ignore case in this situation !! It is actually what we want !!
+        //            // We put in tolower() to prevent bugs later on. There is a faster solution using CulturalInfo. !!
+        //            return DbConnection.Table<T>().Where(x => x.Name.ToLower().Contains(name.ToLower())).ToList();
+        //        }
 
         /// <summary>
         /// Firsts the letter to upper. Helper method.
@@ -496,65 +496,65 @@ namespace GraphyClient
             return createdGuids;
         }
 
-//        public void DeleteContactAndRelatedInfo(Guid contactId)
-//        {
-//            // PCL does not support reflection to call generic method so we have to copy&paste
-//            // http://stackoverflow.com/questions/232535/how-to-use-reflection-to-call-generic-method
-//
-//            // Delete basic info
-//            var phoneNumbers = GetRowsRelatedToContact<PhoneNumber>(contactId);
-//            foreach (var element in phoneNumbers)
-//            {
-//                DbConnection.Delete<PhoneNumber>(element.Id);
-//            }
-//            var emails = GetRowsRelatedToContact<Email>(contactId);
-//            foreach (var element in emails)
-//            {
-//                DbConnection.Delete<Email>(element.Id);
-//            }
-////            var addresses = GetRowsRelatedToContact<Address>(contactId);
-////            foreach (var element in addresses)
-////            {
-////                DbConnection.Delete<>(element.Id);
-////            }
-////            var urls = GetRowsRelatedToContact<Url>(contactId);
-////            foreach (var element in urls)
-////            {
-////                DbConnection.Delete<>(element.Id);
-////            }
-////            var dates = GetRowsRelatedToContact<SpecialDate>(contactId);
-////            foreach (var element in dates)
-////            {
-////                DbConnection.Delete<>(element.Id);
-////            }
-////            var ims = GetRowsRelatedToContact<InstantMessage>(contactId);
-////            foreach (var element in ims)
-////            {
-////                DbConnection.Delete<>(element.Id);
-////            }
-//
-//            // Delete contact-tag map, not delete tag even if it is only appear in this contact
-//            var contactTagMaps = GetRowsRelatedToContact<ContactTagMap>(contactId);
-//            foreach (var map in contactTagMaps)
-//            {
-//                DbConnection.Delete<ContactTagMap>(map.Id);
-//            }
-//
-//            // Delete relationship, not delete relationship type
-//            var fromRelationships = GetRelationshipsFromContact(contactId);
-//            var toRelationships = GetRelationshipsToContact(contactId);
-//            foreach (var relationship in fromRelationships)
-//            {
-//                DbConnection.Delete<Relationship>(relationship.Id);
-//            }
-//            foreach (var relationship in toRelationships)
-//            {
-//                DbConnection.Delete<Relationship>(relationship.Id);
-//            }
-//
-//            // Delete contact
-//            DbConnection.Delete<Contact>(contactId);
-//        }
+        //        public void DeleteContactAndRelatedInfo(Guid contactId)
+        //        {
+        //            // PCL does not support reflection to call generic method so we have to copy&paste
+        //            // http://stackoverflow.com/questions/232535/how-to-use-reflection-to-call-generic-method
+        //
+        //            // Delete basic info
+        //            var phoneNumbers = GetRowsRelatedToContact<PhoneNumber>(contactId);
+        //            foreach (var element in phoneNumbers)
+        //            {
+        //                DbConnection.Delete<PhoneNumber>(element.Id);
+        //            }
+        //            var emails = GetRowsRelatedToContact<Email>(contactId);
+        //            foreach (var element in emails)
+        //            {
+        //                DbConnection.Delete<Email>(element.Id);
+        //            }
+        ////            var addresses = GetRowsRelatedToContact<Address>(contactId);
+        ////            foreach (var element in addresses)
+        ////            {
+        ////                DbConnection.Delete<>(element.Id);
+        ////            }
+        ////            var urls = GetRowsRelatedToContact<Url>(contactId);
+        ////            foreach (var element in urls)
+        ////            {
+        ////                DbConnection.Delete<>(element.Id);
+        ////            }
+        ////            var dates = GetRowsRelatedToContact<SpecialDate>(contactId);
+        ////            foreach (var element in dates)
+        ////            {
+        ////                DbConnection.Delete<>(element.Id);
+        ////            }
+        ////            var ims = GetRowsRelatedToContact<InstantMessage>(contactId);
+        ////            foreach (var element in ims)
+        ////            {
+        ////                DbConnection.Delete<>(element.Id);
+        ////            }
+        //
+        //            // Delete contact-tag map, not delete tag even if it is only appear in this contact
+        //            var contactTagMaps = GetRowsRelatedToContact<ContactTagMap>(contactId);
+        //            foreach (var map in contactTagMaps)
+        //            {
+        //                DbConnection.Delete<ContactTagMap>(map.Id);
+        //            }
+        //
+        //            // Delete relationship, not delete relationship type
+        //            var fromRelationships = GetRelationshipsFromContact(contactId);
+        //            var toRelationships = GetRelationshipsToContact(contactId);
+        //            foreach (var relationship in fromRelationships)
+        //            {
+        //                DbConnection.Delete<Relationship>(relationship.Id);
+        //            }
+        //            foreach (var relationship in toRelationships)
+        //            {
+        //                DbConnection.Delete<Relationship>(relationship.Id);
+        //            }
+        //
+        //            // Delete contact
+        //            DbConnection.Delete<Contact>(contactId);
+        //        }
 
         #endregion
 
@@ -826,6 +826,7 @@ namespace GraphyClient
         #endregion
 
         #region Sync
+
         public async Task GetServerRecordsAsync()
         {
             // We don't want to use reflection!!
@@ -1610,16 +1611,29 @@ namespace GraphyClient
             } 
         }
 
-        public async Task Sync()
+        public async Task SyncDatabaseAsync()
         {
             await GetServerRecordsAsync();
             await PerformSyncOperations();
         }
+
         #endregion
 
         public void MakeChanges()
         {
-//            var contact = 
+            var contact = GetRowFast<Contact>(new Guid("e360f28f-c125-4dbf-99de-b90e2679458c"));
+            contact.FirstName += "_new";
+            contact.LastModified = DateTime.UtcNow;
+            DbConnection.Update(contact);
+
+            var op = new SyncOperation
+            {
+                Id = Guid.NewGuid(),
+                ResourceEndpoint = "contacts",
+                ResourceId = contact.Id,
+                Verb = "Put",
+            };
+            DbConnection.Insert(op);
         }
     }
 }
