@@ -823,6 +823,12 @@ namespace GraphyClient
             } 
         }
 
+        public bool LastCharIsEven(string str)
+        {
+            var lastChar = str[str.Length - 1];
+            return ((lastChar == '0') || (lastChar == '2') || (lastChar == '4') || (lastChar == '6') || (lastChar == '8'));
+        }
+
         #endregion
 
         #region Sync
@@ -1619,21 +1625,102 @@ namespace GraphyClient
 
         #endregion
 
-        public void MakeChanges()
+        /// <param name="numberOfChanges">Number of changes should be small.</param>
+        public void MakeChanges(string prefix, int numberOfChanges, DateTime changesTime)
         {
-            var contact = GetRowFast<Contact>(new Guid("e360f28f-c125-4dbf-99de-b90e2679458c"));
-            contact.FirstName += "_new";
-            contact.LastModified = DateTime.UtcNow;
-            DbConnection.Update(contact);
 
-            var op = new SyncOperation
+            #region Create new records
+            for (var i = 1; i <= numberOfChanges; i++)
             {
-                Id = Guid.NewGuid(),
-                ResourceEndpoint = "contacts",
-                ResourceId = contact.Id,
-                Verb = "Put",
-            };
-            DbConnection.Insert(op);
+                var contact = new Contact
+                {
+                    Id = Guid.NewGuid(),
+                    FirstName = String.Format("{0}_Contact_{1}_new", prefix, i),
+                    LastModified = changesTime, 
+                };
+                DbConnection.Insert(contact);
+
+                DbConnection.Insert(new SyncOperation
+                    {
+                        Id = Guid.NewGuid(),
+                        Verb = "Post",
+                        ResourceEndpoint = "contacts",
+                        ResourceId = contact.Id,
+                    }
+                );
+
+                var phoneNumber = new PhoneNumber
+                { 
+                    Id = Guid.NewGuid(),
+                    ContactId = contact.Id,
+                    Number = i.ToString() + "_new",
+                    LastModified = changesTime,
+                };
+                DbConnection.Insert(phoneNumber);
+
+                DbConnection.Insert(new SyncOperation
+                    {
+                        Id = Guid.NewGuid(),
+                        Verb = "Post",
+                        ResourceEndpoint = "phone_numbers",
+                        ResourceId = phoneNumber.Id,
+                    }
+                );
+            }
+            #endregion
+
+            #region Update info
+            var evenContacts = DbConnection.Table<Contact>().Where(x => LastCharIsEven(x.FirstName)).Take(numberOfChanges);
+            foreach (var evenContact in evenContacts)
+            {
+                // Update first name
+                evenContact.FirstName += "_update";
+                evenContact.LastModified = changesTime;
+                DbConnection.Update(evenContact);
+
+                DbConnection.Insert(new SyncOperation
+                    {
+                        Id = Guid.NewGuid(),
+                        Verb = "Put",
+                        ResourceEndpoint = "contacts",
+                        ResourceId = evenContact.Id,
+                    });
+
+                // Add new tags
+//                var tag = new Tag
+//                { 
+//                    Id = Guid.NewGuid(),
+////                    Name = String.Format("{0}_Tag_{1}", prefix, i),
+//                    LastModified = changesTime,
+//                };
+//                DbConnection.Insert(tag);
+//
+//                DbConnection.Insert(new SyncOperation
+//                    {
+//                        Id = Guid.NewGuid(),
+//                        Verb = "Post",
+//                        ResourceEndpoint = "tags",
+//                        ResourceId = tag.Id,
+//                    }
+//                );
+            }
+
+            var evenPhoneNumbers = DbConnection.Table<PhoneNumber>().Where(x => LastCharIsEven(x.Number)).Take(numberOfChanges);
+            foreach (var evenPhoneNumber in evenPhoneNumbers)
+            {
+                evenPhoneNumber.Number += "_update";
+                evenPhoneNumber.LastModified = changesTime;
+                DbConnection.Update(evenPhoneNumber);
+
+                DbConnection.Insert(new SyncOperation
+                    {
+                        Id = Guid.NewGuid(),
+                        Verb = "Put",
+                        ResourceEndpoint = "phone_numbers",
+                        ResourceId = evenPhoneNumber.Id,
+                    });
+            }
+            #endregion
         }
     }
 }
