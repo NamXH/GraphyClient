@@ -1626,16 +1626,15 @@ namespace GraphyClient
         #endregion
 
         /// <param name="numberOfChanges">Number of changes should be small.</param>
-        public void MakeChanges(string prefix, int numberOfChanges, DateTime changesTime)
+        public void MakeChanges(string newPrefix, int numberOfChanges, DateTime changesTime)
         {
-
             #region Create new records
             for (var i = 1; i <= numberOfChanges; i++)
             {
                 var contact = new Contact
                 {
                     Id = Guid.NewGuid(),
-                    FirstName = String.Format("{0}_Contact_{1}_new", prefix, i),
+                    FirstName = String.Format("{0}_Contact_{1}_new", newPrefix, i),
                     LastModified = changesTime, 
                 };
                 DbConnection.Insert(contact);
@@ -1670,9 +1669,9 @@ namespace GraphyClient
             #endregion
 
             #region Update info and create new tags, relationships
-            var evenContacts = DbConnection.Table<Contact>().Where(x => LastCharIsEven(x.FirstName)).Take(numberOfChanges);
+            var evenContacts = DbConnection.Table<Contact>().AsEnumerable().Where(x => LastCharIsEven(x.FirstName)).Take(numberOfChanges);
             var count = 0;
-            var firstOddContact = DbConnection.Table<Contact>().Where(x => !LastCharIsEven(x.FirstName)).FirstOrDefault();
+            var firstOddContact = DbConnection.Table<Contact>().AsEnumerable().Where(x => !LastCharIsEven(x.FirstName)).FirstOrDefault();
             foreach (var evenContact in evenContacts)
             {
                 count++;
@@ -1694,7 +1693,7 @@ namespace GraphyClient
                 var tag = new Tag
                 { 
                     Id = Guid.NewGuid(),
-                    Name = String.Format("{0}_Tag_{1}_new", prefix, count),
+                    Name = String.Format("{0}_Tag_{1}_new", newPrefix, count),
                     LastModified = changesTime,
                 };
                 DbConnection.Insert(tag);
@@ -1713,7 +1712,7 @@ namespace GraphyClient
                     Id = Guid.NewGuid(),
                     TagId = tag.Id,
                     ContactId = evenContact.Id,
-                    Detail = String.Format("{0}_TagMap_{1}_new", prefix, count),
+                    Detail = String.Format("{0}_TagMap_{1}_new", newPrefix, count),
                     LastModified = changesTime,
                 };
                 DbConnection.Insert(tagMap);
@@ -1731,7 +1730,7 @@ namespace GraphyClient
                 var relationshipType = new RelationshipType
                 {
                     Id = Guid.NewGuid(),
-                    Name = String.Format("{0}_RelationshipType_{1}_new", prefix, count),
+                    Name = String.Format("{0}_RelationshipType_{1}_new", newPrefix, count),
                     LastModified = changesTime,
                 };
                 DbConnection.Insert(relationshipType);
@@ -1751,13 +1750,13 @@ namespace GraphyClient
                     FromContactId = evenContact.Id,
                     ToContactId = firstOddContact.Id,
                     RelationshipTypeId = relationshipType.Id,
-                    Detail = String.Format("{0}_Relationship_{1}_new", prefix, count),
+                    Detail = String.Format("{0}_Relationship_{1}_new", newPrefix, count),
                     LastModified = changesTime,
                 };
                 DbConnection.Insert(relationship);
             }
 
-            var evenPhoneNumbers = DbConnection.Table<PhoneNumber>().Where(x => LastCharIsEven(x.Number)).Take(numberOfChanges);
+            var evenPhoneNumbers = DbConnection.Table<PhoneNumber>().AsEnumerable().Where(x => LastCharIsEven(x.Number)).Take(numberOfChanges);
             foreach (var evenPhoneNumber in evenPhoneNumbers)
             {
                 evenPhoneNumber.Number += "_update";
