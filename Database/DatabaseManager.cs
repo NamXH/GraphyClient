@@ -1669,11 +1669,15 @@ namespace GraphyClient
             }
             #endregion
 
-            #region Update info
+            #region Update info and create new tags, relationships
             var evenContacts = DbConnection.Table<Contact>().Where(x => LastCharIsEven(x.FirstName)).Take(numberOfChanges);
+            var count = 0;
+            var firstOddContact = DbConnection.Table<Contact>().Where(x => !LastCharIsEven(x.FirstName)).FirstOrDefault();
             foreach (var evenContact in evenContacts)
             {
-                // Update first name
+                count++;
+
+                // Update First name
                 evenContact.FirstName += "_update";
                 evenContact.LastModified = changesTime;
                 DbConnection.Update(evenContact);
@@ -1686,23 +1690,71 @@ namespace GraphyClient
                         ResourceId = evenContact.Id,
                     });
 
-                // Add new tags
-//                var tag = new Tag
-//                { 
-//                    Id = Guid.NewGuid(),
-////                    Name = String.Format("{0}_Tag_{1}", prefix, i),
-//                    LastModified = changesTime,
-//                };
-//                DbConnection.Insert(tag);
-//
-//                DbConnection.Insert(new SyncOperation
-//                    {
-//                        Id = Guid.NewGuid(),
-//                        Verb = "Post",
-//                        ResourceEndpoint = "tags",
-//                        ResourceId = tag.Id,
-//                    }
-//                );
+                // Add new tags and tagMaps
+                var tag = new Tag
+                { 
+                    Id = Guid.NewGuid(),
+                    Name = String.Format("{0}_Tag_{1}_new", prefix, count),
+                    LastModified = changesTime,
+                };
+                DbConnection.Insert(tag);
+
+                DbConnection.Insert(new SyncOperation
+                    {
+                        Id = Guid.NewGuid(),
+                        Verb = "Post",
+                        ResourceEndpoint = "tags",
+                        ResourceId = tag.Id,
+                    }
+                );
+
+                var tagMap = new ContactTagMap
+                {
+                    Id = Guid.NewGuid(),
+                    TagId = tag.Id,
+                    ContactId = evenContact.Id,
+                    Detail = String.Format("{0}_TagMap_{1}_new", prefix, count),
+                    LastModified = changesTime,
+                };
+                DbConnection.Insert(tagMap);
+
+                DbConnection.Insert(new SyncOperation
+                    {
+                        Id = Guid.NewGuid(),
+                        Verb = "Post",
+                        ResourceEndpoint = "contact_tag_maps",
+                        ResourceId = tagMap.Id,
+                    }
+                );
+
+                // Add new relationshipTypes and relationships
+                var relationshipType = new RelationshipType
+                {
+                    Id = Guid.NewGuid(),
+                    Name = String.Format("{0}_RelationshipType_{1}_new", prefix, count),
+                    LastModified = changesTime,
+                };
+                DbConnection.Insert(relationshipType);
+
+                DbConnection.Insert(new SyncOperation
+                    {
+                        Id = Guid.NewGuid(),
+                        Verb = "Post",
+                        ResourceEndpoint = "relationship_types",
+                        ResourceId = relationshipType.Id,
+                    }
+                );
+
+                var relationship = new Relationship
+                {
+                    Id = Guid.NewGuid(),
+                    FromContactId = evenContact.Id,
+                    ToContactId = firstOddContact.Id,
+                    RelationshipTypeId = relationshipType.Id,
+                    Detail = String.Format("{0}_Relationship_{1}_new", prefix, count),
+                    LastModified = changesTime,
+                };
+                DbConnection.Insert(relationship);
             }
 
             var evenPhoneNumbers = DbConnection.Table<PhoneNumber>().Where(x => LastCharIsEven(x.Number)).Take(numberOfChanges);

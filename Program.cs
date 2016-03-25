@@ -24,7 +24,7 @@ namespace GraphyClient
 //            await db2.Sync();
 
 //            var db1 = new DatabaseManager("x");
-//            db1.MakeChanges();
+//            db1.MakeChanges("x_new1");
 //            await db1.SyncDatabaseAsync();
 
 
