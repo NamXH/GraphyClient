@@ -11,25 +11,21 @@ namespace GraphyClient
         {
             Console.WriteLine(DateTime.UtcNow);
 
-//            var t = DoWork();
-//            t.Wait();
-
-            var db1 = new DatabaseManager("x", 8);
-            db1.MakeChanges("x_new1", 2, DateTime.UtcNow);
+            var t = DoWork();
+            t.Wait();
         }
 
         public static async Task DoWork()
         {
-            var db1 = new DatabaseManager("x", 8);
+//            var db1 = new DatabaseManager("x", 8);
 //            await db1.SyncDatabaseAsync();
 
 //            var db2 = new DatabaseManager("y", 0);
 //            await db2.SyncDatabaseAsync();
 
-//            var db1 = new DatabaseManager("x");
-
+            var db1 = new DatabaseManager("x");
             db1.MakeChanges("x_new1", 2, DateTime.UtcNow);
-//            await db1.SyncDatabaseAsync();
+            await db1.SyncDatabaseAsync();
         }
     }
 }

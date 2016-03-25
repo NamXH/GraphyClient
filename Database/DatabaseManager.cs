@@ -1754,6 +1754,15 @@ namespace GraphyClient
                     LastModified = changesTime,
                 };
                 DbConnection.Insert(relationship);
+
+                DbConnection.Insert(new SyncOperation
+                    {
+                        Id = Guid.NewGuid(),
+                        Verb = "Post",
+                        ResourceEndpoint = "relationships",
+                        ResourceId = relationship.Id,
+                    }
+                );
             }
 
             var evenPhoneNumbers = DbConnection.Table<PhoneNumber>().AsEnumerable().Where(x => LastCharIsEven(x.Number)).Take(numberOfChanges);
