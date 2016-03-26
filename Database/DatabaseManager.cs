@@ -576,7 +576,7 @@ namespace GraphyClient
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message); // result will be null if exception occur.
+//                Console.WriteLine("Get Row Fast throw: " + e.Message); // result will be null if exception occur.
             }
 
             return result;
@@ -1625,6 +1625,7 @@ namespace GraphyClient
 
         #endregion
 
+        #region Make changes
         /// <param name="numberOfChanges">Number of changes should be small.</param>
         public void MakeChanges(string newPrefix, int numberOfChanges, DateTime changesTime)
         {
@@ -1782,6 +1783,7 @@ namespace GraphyClient
             }
             #endregion
         }
+        #endregion
     }
 }
 
