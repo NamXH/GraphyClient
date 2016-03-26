@@ -1626,6 +1626,7 @@ namespace GraphyClient
         #endregion
 
         #region Make changes
+
         /// <param name="numberOfChanges">Number of changes should be small.</param>
         public void MakeChanges(string newPrefix, int numberOfChanges, DateTime changesTime)
         {
@@ -1783,6 +1784,42 @@ namespace GraphyClient
             }
             #endregion
         }
+
+        public void MakeChangesToSameElements(string suffix, int numberOfChanges, DateTime changesTime)
+        {
+            var contacts = DbConnection.Table<Contact>().AsEnumerable().Take(numberOfChanges); 
+            foreach (var contact in contacts)
+            {
+                contact.FirstName += suffix;
+                contact.LastModified = changesTime;
+                DbConnection.Update(contact);
+
+                DbConnection.Insert(new SyncOperation
+                    {
+                        Id = Guid.NewGuid(),
+                        Verb = "Put",
+                        ResourceEndpoint = "contacts",
+                        ResourceId = contact.Id,
+                    });
+            }
+
+            var phoneNumbers = DbConnection.Table<PhoneNumber>().AsEnumerable().Take(numberOfChanges);
+            foreach (var phoneNumber in phoneNumbers)
+            {
+                phoneNumber.Number += suffix;
+                phoneNumber.LastModified = changesTime;
+                DbConnection.Update(phoneNumber);
+
+                DbConnection.Insert(new SyncOperation
+                    {
+                        Id = Guid.NewGuid(),
+                        Verb = "Put",
+                        ResourceEndpoint = "phone_numbers",
+                        ResourceId = phoneNumber.Id,
+                    });
+            }
+        }
+
         #endregion
     }
 }
